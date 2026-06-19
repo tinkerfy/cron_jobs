@@ -7,7 +7,7 @@ import { MatchedJob } from "./lib/cron";
 const DEFAULT_RANGE_DAYS = 7;
 
 // Time-of-day colors mapped to clock hours (0–24)
-const TIME_STOPS = [
+const TIME_STOPS: [number, string][] = [
   [0, "#0f172a"],
   [4, "#1e1b4b"],
   [6, "#312e81"],
@@ -20,7 +20,7 @@ const TIME_STOPS = [
   [20, "#4338ca"],
   [22, "#312e81"],
   [24, "#0f172a"],
-] as [number, string][];
+];
 
 function getTimeGradient(centerMinute: number): string {
   const centerPct = (centerMinute / 1440) * 100;
@@ -29,7 +29,7 @@ function getTimeGradient(centerMinute: number): string {
   const stops = TIME_STOPS.map(([hour, color]) => {
     const pct = (hour / 24) * 100;
     const shifted = ((pct + shift) % 100 + 100) % 100;
-    return `${color} ${shifted.toFixed(1)}%`;
+    return `${color} ${shifted}%`;
   });
   
   return `linear-gradient(to right, ${stops.join(", ")})`;
@@ -274,7 +274,7 @@ export default function Home() {
                   width: `${(rangeStart / 1440) * 100}%`,
                   top: 0,
                   height: '100%',
-                  background: 'rgba(0,0,0,0.35)',
+                  background: 'rgba(0,0,0,0.85)',
                 }}
               />
               
@@ -286,7 +286,20 @@ export default function Home() {
                   width: `${((1440 - rangeEnd) / 1440) * 100}%`,
                   top: 0,
                   height: '100%',
-                  background: 'rgba(0,0,0,0.35)',
+                  background: 'rgba(0,0,0,0.85)',
+                }}
+              />
+              
+              {/* Selected range highlight */}
+              <div
+                className="absolute pointer-events-none"
+                style={{
+                  left: `${(rangeStart / 1440) * 100}%`,
+                  width: `${((rangeEnd - rangeStart) / 1440) * 100}%`,
+                  top: 0,
+                  height: '100%',
+                  background: 'rgba(255,255,255,0.05)',
+                  borderRadius: 8,
                 }}
               />
               
