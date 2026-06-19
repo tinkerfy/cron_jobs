@@ -40,7 +40,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Server-side cron matching within the date range
-    const results: MatchedJob[] = jobs.map((job) => {
+    const results = jobs.map((job) => {
       const matchedDates: Date[] = [];
       const current = new Date(from);
       current.setSeconds(0, 0);
@@ -60,7 +60,7 @@ export async function GET(request: NextRequest) {
         matchedDates: matchedDates.map(d => d.toISOString()),
         totalCount: matchedDates.length,
       };
-    }).filter(r => r.totalCount > 0);
+    }).filter((r: { totalCount: number }) => r.totalCount > 0);
 
     return NextResponse.json(results);
   } catch (error) {
