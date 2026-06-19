@@ -1,39 +1,28 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { CronJob, formatDate, formatTime, buildDateTime } from "./lib/cron";
 import { MatchedJob } from "./lib/cron";
 
 const DEFAULT_RANGE_DAYS = 7;
 
-// Time-of-day colors mapped to clock hours (0–24)
-const TIME_STOPS: [number, string][] = [
-  [0, "#0f172a"],
-  [4, "#1e1b4b"],
-  [6, "#312e81"],
-  [8, "#4338ca"],
-  [10, "#3b82f6"],
-  [12, "#fde68a"],
-  [14, "#fef3c7"],
-  [16, "#fde68a"],
-  [18, "#60a5fa"],
-  [20, "#4338ca"],
-  [22, "#312e81"],
-  [24, "#0f172a"],
-];
-
-function getTimeGradient(centerMinute: number): string {
-  const centerPct = (centerMinute / 1440) * 100;
-  const shift = 50 - centerPct;
-  
-  const stops = TIME_STOPS.map(([hour, color]) => {
-    const pct = (hour / 24) * 100;
-    const shifted = ((pct + shift) % 100 + 100) % 100;
-    return `${color} ${shifted}%`;
-  });
-  
-  return `linear-gradient(to right, ${stops.join(", ")})`;
-}
+// Wide gradient (200% width) — brightest at center (50%), night at edges (0% and 100%)
+const WIDE_GRADIENT =
+  "linear-gradient(to right, " +
+  "#0f172a 0%, " +
+  "#1e1b4b 5%, " +
+  "#312e81 10%, " +
+  "#4338ca 15%, " +
+  "#3b82f6 25%, " +
+  "#fde68a 38%, " +
+  "#fef3c7 50%, " +
+  "#fde68a 62%, " +
+  "#60a5fa 75%, " +
+  "#4338ca 85%, " +
+  "#312e81 90%, " +
+  "#1e1b4b 95%, " +
+  "#0f172a 100% " +
+  ")";
 
 export default function Home() {
   const [jobs, setJobs] = useState<CronJob[]>([]);
@@ -61,6 +50,16 @@ export default function Home() {
   const dragRangeStartRef = useRef(0);
   const dragRangeEndRef = useRef(0);
   const isDragging = useRef(false);
+
+  const rulerBg = useMemo(() => {
+    const centerPct = ((rangeStart + rangeEnd) / 2 / 1440) * 100;
+    const shift = 50 - centerPct;
+    return {
+      background: WIDE_GRADIENT,
+      backgroundSize: "200% 100%",
+      backgroundPosition: `${shift}% center`,
+    };
+  }, [rangeStart, rangeEnd]);
 
   useEffect(() => {
     fetch("/api/cron-jobs")
@@ -218,9 +217,7 @@ export default function Home() {
             <div
               ref={rulerRef}
               className="relative h-8 rounded-lg overflow-hidden select-none cursor-pointer"
-              style={{
-                background: getTimeGradient((rangeStart + rangeEnd) / 2),
-              }}
+              style={rulerBg}
               onMouseDown={(e) => {
                 const rect = rulerRef.current!.getBoundingClientRect();
                 const x = Math.max(0, Math.min(e.clientX - rect.left, rect.width));
