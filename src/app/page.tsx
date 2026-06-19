@@ -6,6 +6,35 @@ import { MatchedJob } from "./lib/cron";
 
 const DEFAULT_RANGE_DAYS = 7;
 
+// Time-of-day colors mapped to clock hours (0–24)
+const TIME_STOPS = [
+  [0, "#0f172a"],
+  [4, "#1e1b4b"],
+  [6, "#312e81"],
+  [8, "#4338ca"],
+  [10, "#3b82f6"],
+  [12, "#fde68a"],
+  [14, "#fef3c7"],
+  [16, "#fde68a"],
+  [18, "#60a5fa"],
+  [20, "#4338ca"],
+  [22, "#312e81"],
+  [24, "#0f172a"],
+] as [number, string][];
+
+function getTimeGradient(centerMinute: number): string {
+  const centerPct = (centerMinute / 1440) * 100;
+  const shift = 50 - centerPct;
+  
+  const stops = TIME_STOPS.map(([hour, color]) => {
+    const pct = (hour / 24) * 100;
+    const shifted = ((pct + shift) % 100 + 100) % 100;
+    return `${color} ${shifted.toFixed(1)}%`;
+  });
+  
+  return `linear-gradient(to right, ${stops.join(", ")})`;
+}
+
 export default function Home() {
   const [jobs, setJobs] = useState<CronJob[]>([]);
   const [results, setResults] = useState<MatchedJob[] | null>(null);
@@ -188,7 +217,10 @@ export default function Home() {
             <div className="text-xs text-slate-400 dark:text-slate-500 mb-1">Time Range</div>
             <div
               ref={rulerRef}
-              className="relative h-8 bg-slate-100 dark:bg-slate-700 rounded-lg overflow-hidden select-none cursor-pointer"
+              className="relative h-8 rounded-lg overflow-hidden select-none cursor-pointer"
+              style={{
+                background: getTimeGradient((rangeStart + rangeEnd) / 2),
+              }}
               onMouseDown={(e) => {
                 const rect = rulerRef.current!.getBoundingClientRect();
                 const x = Math.max(0, Math.min(e.clientX - rect.left, rect.width));
@@ -234,14 +266,27 @@ export default function Home() {
                 );
               })}
               
-              {/* Selected range */}
+              {/* Dimmed left */}
               <div
-                className="absolute bg-blue-100 dark:bg-blue-900/40 rounded-sm pointer-events-none"
+                className="absolute pointer-events-none"
                 style={{
-                  left: `${(rangeStart / 1440) * 100}%`,
-                  width: `${((rangeEnd - rangeStart) / 1440) * 100}%`,
-                  top: 10,
-                  height: 18,
+                  left: 0,
+                  width: `${(rangeStart / 1440) * 100}%`,
+                  top: 0,
+                  height: '100%',
+                  background: 'rgba(0,0,0,0.35)',
+                }}
+              />
+              
+              {/* Dimmed right */}
+              <div
+                className="absolute pointer-events-none"
+                style={{
+                  right: 0,
+                  width: `${((1440 - rangeEnd) / 1440) * 100}%`,
+                  top: 0,
+                  height: '100%',
+                  background: 'rgba(0,0,0,0.35)',
                 }}
               />
               
