@@ -274,7 +274,7 @@ export default function Home() {
                   width: `${(rangeStart / 1440) * 100}%`,
                   top: 0,
                   height: '100%',
-                  background: 'rgba(0,0,0,0.85)',
+                  background: '#000',
                 }}
               />
               
@@ -286,7 +286,7 @@ export default function Home() {
                   width: `${((1440 - rangeEnd) / 1440) * 100}%`,
                   top: 0,
                   height: '100%',
-                  background: 'rgba(0,0,0,0.85)',
+                  background: '#000',
                 }}
               />
               
