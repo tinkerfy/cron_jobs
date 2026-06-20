@@ -1,28 +1,10 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { CronJob, formatDate, formatTime, buildDateTime } from "./lib/cron";
 import { MatchedJob } from "./lib/cron";
 
 const DEFAULT_RANGE_DAYS = 7;
-
-// Wide gradient (200% width) — brightest at center (50%), night at edges (0% and 100%)
-const WIDE_GRADIENT =
-  "linear-gradient(to right, " +
-  "#0f172a 0%, " +
-  "#1e1b4b 5%, " +
-  "#312e81 10%, " +
-  "#4338ca 15%, " +
-  "#3b82f6 25%, " +
-  "#fde68a 38%, " +
-  "#fef3c7 50%, " +
-  "#fde68a 62%, " +
-  "#60a5fa 75%, " +
-  "#4338ca 85%, " +
-  "#312e81 90%, " +
-  "#1e1b4b 95%, " +
-  "#0f172a 100% " +
-  ")";
 
 export default function Home() {
   const [jobs, setJobs] = useState<CronJob[]>([]);
@@ -42,24 +24,61 @@ export default function Home() {
   });
   const [toTime, setToTime] = useState("23:59");
   const [filterApplied, setFilterApplied] = useState(false);
-  const [rangeStart, setRangeStart] = useState(0);
-  const [rangeEnd, setRangeEnd] = useState(1439);
-  const rulerRef = useRef<HTMLDivElement>(null);
-  const [dragMode, setDragMode] = useState<"start" | "end" | "middle" | null>(null);
-  const dragStartRef = useRef(0);
-  const dragRangeStartRef = useRef(0);
-  const dragRangeEndRef = useRef(0);
-  const isDragging = useRef(false);
 
-  const rulerBg = useMemo(() => {
-    const centerPct = ((rangeStart + rangeEnd) / 2 / 1440) * 100;
-    const shift = 50 - centerPct;
-    return {
-      background: WIDE_GRADIENT,
-      backgroundSize: "200% 100%",
-      backgroundPosition: `${shift}% center`,
+  const fromMinutes = parseInt(fromTime.split(':')[0]) * 60 + parseInt(fromTime.split(':')[1]);
+  const toMinutes = parseInt(toTime.split(':')[0]) * 60 + parseInt(toTime.split(':')[1]);
+
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragHandle, setDragHandle] = useState<'from' | 'to' | null>(null);
+
+  const rulerRef = useRef<HTMLDivElement>(null);
+  const fromTimeRef = useRef(fromTime);
+  const toTimeRef = useRef(toTime);
+
+  useEffect(() => { fromTimeRef.current = fromTime; });
+  useEffect(() => { toTimeRef.current = toTime; });
+
+  const handleRulerMouseDown = useCallback((e: React.MouseEvent, handle: 'from' | 'to') => {
+    e.preventDefault();
+    setIsDragging(true);
+    setDragHandle(handle);
+  }, []);
+
+  useEffect(() => {
+    if (!isDragging || !dragHandle || !rulerRef.current) return;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      const rect = rulerRef.current!.getBoundingClientRect();
+      const ratio = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+      const minutes = Math.round(ratio * 1440);
+      
+      if (dragHandle === 'from') {
+        const clamped = Math.min(minutes, parseInt(toTimeRef.current.split(':')[0]) * 60 + parseInt(toTimeRef.current.split(':')[1]) - 1);
+        const h = String(Math.floor(clamped / 60)).padStart(2, '0');
+        const m = String(clamped % 60).padStart(2, '0');
+        setFromTime(`${h}:${m}`);
+      } else {
+        const clamped = Math.max(minutes, parseInt(fromTimeRef.current.split(':')[0]) * 60 + parseInt(fromTimeRef.current.split(':')[1]) + 1);
+        const h = String(Math.floor(clamped / 60)).padStart(2, '0');
+        const m = String(clamped % 60).padStart(2, '0');
+        setToTime(`${h}:${m}`);
+      }
     };
-  }, [rangeStart, rangeEnd]);
+
+    const handleMouseUp = () => {
+      if (isDragging) {
+        setIsDragging(false);
+        setDragHandle(null);
+      }
+    };
+
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isDragging, dragHandle]);
 
   useEffect(() => {
     fetch("/api/cron-jobs")
@@ -71,46 +90,10 @@ export default function Home() {
       .catch((err) => console.error("Failed to load cron jobs:", err));
   }, []);
 
-  useEffect(() => {
-    if (!isDragging.current) return;
-    const handleWindowMove = (e: MouseEvent) => {
-      if (!rulerRef.current) return;
-      const rect = rulerRef.current.getBoundingClientRect();
-      const dx = e.clientX - dragStartRef.current;
-      const pxPerMin = rect.width / 1440;
-      const minDelta = Math.round((dx / pxPerMin) / 10) * 10;
-      
-      let newStart = dragRangeStartRef.current;
-      let newEnd = dragRangeEndRef.current;
-      
-      if (dragMode === "start") {
-        newStart = Math.max(0, Math.min(dragRangeEndRef.current - 10, dragRangeStartRef.current + minDelta));
-      } else if (dragMode === "end") {
-        newEnd = Math.min(1439, Math.max(dragRangeStartRef.current + 10, dragRangeEndRef.current + minDelta));
-      } else if (dragMode === "middle") {
-        const range = dragRangeEndRef.current - dragRangeStartRef.current;
-        newStart = Math.max(0, Math.min(1439 - range, dragRangeStartRef.current + minDelta));
-        newEnd = newStart + range;
-      }
-      
-      const pad = (n: number) => String(n).padStart(2, "0");
-      setFromTime(`${pad(Math.floor(newStart / 60))}:${pad(newStart % 60)}`);
-      setToTime(`${pad(Math.floor(newEnd / 60))}:${pad(newEnd % 60)}`);
-    };
-    const handleWindowUp = () => {
-      isDragging.current = false;
-      setDragMode(null);
-    };
-    window.addEventListener("mousemove", handleWindowMove);
-    window.addEventListener("mouseup", handleWindowUp);
-    return () => {
-      window.removeEventListener("mousemove", handleWindowMove);
-      window.removeEventListener("mouseup", handleWindowUp);
-    };
-  }, [dragMode]);
-
   const fetchResults = useCallback((from: Date, to: Date) => {
-    fetch(`/api/cron-jobs?from=${encodeURIComponent(from.toISOString())}&to=${encodeURIComponent(to.toISOString())}`)
+    const fmt = (d: Date) =>
+      `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}T${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+    fetch(`/api/cron-jobs?from=${encodeURIComponent(fmt(from))}&to=${encodeURIComponent(fmt(to))}`)
       .then((res) => {
         if (!res.ok) throw new Error("Failed to fetch filtered jobs");
         return res.json();
@@ -154,56 +137,56 @@ export default function Home() {
       <main className="max-w-6xl mx-auto px-6 py-8">
         {/* Filter Panel */}
         <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6 mb-8">
-          <div className="flex flex-col sm:flex-row sm:items-end gap-4">
+          <div className="flex flex-col sm:flex-row sm:items-end gap-6">
             <div className="flex-1">
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                 From
               </label>
-              <div className="flex gap-2">
+              <div className="flex gap-3">
                 <input
                   type="date"
                   value={fromDate}
                   onChange={(e) => setFromDate(e.target.value)}
-                  className="flex-1 px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                  className="flex-1 px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
                 />
                 <input
                   type="time"
                   value={fromTime}
                   onChange={(e) => setFromTime(e.target.value)}
-                  className="w-24 px-2 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none text-sm"
+                  className="w-28 px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none text-sm font-mono"
                 />
               </div>
             </div>
             <div className="flex-1">
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                 To
               </label>
-              <div className="flex gap-2">
+              <div className="flex gap-3">
                 <input
                   type="date"
                   value={toDate}
                   onChange={(e) => setToDate(e.target.value)}
-                  className="flex-1 px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                  className="flex-1 px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
                 />
                 <input
                   type="time"
                   value={toTime}
                   onChange={(e) => setToTime(e.target.value)}
-                  className="w-24 px-2 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none text-sm"
+                  className="w-28 px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none text-sm font-mono"
                 />
               </div>
             </div>
-            <div className="flex gap-2">
+            <div className="flex gap-3">
               <button
                 onClick={handleFilter}
-                className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors shadow-sm"
+                className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors shadow-sm"
               >
                 Filter
               </button>
               {filterApplied && (
                 <button
                   onClick={handleReset}
-                  className="px-5 py-2 bg-slate-200 hover:bg-slate-300 dark:bg-slate-600 dark:hover:bg-slate-500 text-slate-700 dark:text-slate-200 font-medium rounded-lg transition-colors"
+                  className="px-6 py-3 bg-slate-200 hover:bg-slate-300 dark:bg-slate-600 dark:hover:bg-slate-500 text-slate-700 dark:text-slate-200 font-medium rounded-lg transition-colors"
                 >
                   Reset
                 </button>
@@ -216,62 +199,38 @@ export default function Home() {
             <div className="text-xs text-slate-400 dark:text-slate-500 mb-1">Time Range</div>
             <div
               ref={rulerRef}
-              className="relative h-8 rounded-lg overflow-hidden select-none cursor-pointer"
-              style={rulerBg}
-              onMouseDown={(e) => {
-                const rect = rulerRef.current!.getBoundingClientRect();
-                const x = Math.max(0, Math.min(e.clientX - rect.left, rect.width));
-                const minutes = Math.round((x / rect.width) * 1440);
-                const snapped = Math.round(minutes / 10) * 10;
-                const clamped = Math.max(0, Math.min(1439, snapped));
-                
-                if (Math.abs(clamped - rangeStart) <= 10) {
-                  setDragMode("start");
-                } else if (Math.abs(clamped - rangeEnd) <= 10) {
-                  setDragMode("end");
-                } else {
-                  setDragMode("middle");
-                }
-                dragStartRef.current = e.clientX;
-                dragRangeStartRef.current = rangeStart;
-                dragRangeEndRef.current = rangeEnd;
-                isDragging.current = true;
-              }}
+              className="relative h-8 rounded-lg overflow-hidden"
+              style={{ background: "linear-gradient(to bottom, #334155, #1e293b)" }}
             >
               {/* Hour labels */}
-              {Array.from({ length: 8 }, (_, i) => i * 3).map((hour) => (
+              {Array.from({ length: 25 }, (_, i) => (
                 <span
-                  key={hour}
+                  key={i}
                   className="absolute text-[9px] text-slate-400 dark:text-slate-500 pointer-events-none"
-                  style={{ left: `${(hour / 24) * 100}%`, transform: 'translateX(-50%)', top: 0 }}
+                  style={{ left: `${(i / 24) * 100}%`, transform: 'translateX(-50%)', top: 0 }}
                 >
-                  {String(hour).padStart(2, "0")}:00
+                  {String(i % 24).padStart(2, "0")}:00
                 </span>
               ))}
               
-              {/* 10-min ticks */}
-              {Array.from({ length: 145 }, (_, i) => {
-                const minute = i * 10;
-                const isHour = minute % 60 === 0;
-                const isHalfHour = minute % 30 === 0 && !isHour;
-                return (
-                  <div
-                    key={i}
-                    className={`absolute pointer-events-none ${isHour ? "h-3 bg-slate-300 dark:bg-slate-600" : isHalfHour ? "h-2 bg-slate-200 dark:bg-slate-600/60" : "h-1.5 bg-slate-200 dark:bg-slate-600/40"}`}
-                    style={{ left: `${(minute / 1440) * 100}%`, width: 1, top: 12 }}
-                  />
-                );
-              })}
+              {/* Hour ticks */}
+              {Array.from({ length: 25 }, (_, i) => (
+                <div
+                  key={i}
+                  className="absolute pointer-events-none h-3 bg-slate-600/60"
+                  style={{ left: `${(i / 24) * 100}%`, width: 1, top: 12 }}
+                />
+              ))}
               
               {/* Dimmed left */}
               <div
                 className="absolute pointer-events-none"
                 style={{
                   left: 0,
-                  width: `${(rangeStart / 1440) * 100}%`,
+                  width: `${fromMinutes / 1440 * 100}%`,
                   top: 0,
                   height: '100%',
-                  background: '#000',
+                  background: 'rgba(0,0,0,0.4)',
                 }}
               />
               
@@ -280,37 +239,69 @@ export default function Home() {
                 className="absolute pointer-events-none"
                 style={{
                   right: 0,
-                  width: `${((1440 - rangeEnd) / 1440) * 100}%`,
+                  width: `${(1440 - toMinutes) / 1440 * 100}%`,
                   top: 0,
                   height: '100%',
-                  background: '#000',
+                  background: 'rgba(0,0,0,0.4)',
                 }}
               />
               
-              {/* Selected range highlight */}
+              {/* Selected range fill */}
               <div
                 className="absolute pointer-events-none"
                 style={{
-                  left: `${(rangeStart / 1440) * 100}%`,
-                  width: `${((rangeEnd - rangeStart) / 1440) * 100}%`,
+                  left: `${fromMinutes / 1440 * 100}%`,
+                  width: `${(toMinutes - fromMinutes) / 1440 * 100}%`,
                   top: 0,
                   height: '100%',
-                  background: 'rgba(255,255,255,0.05)',
-                  borderRadius: 8,
+                  background: 'rgba(59, 130, 246, 0.15)',
                 }}
               />
               
-              {/* Handle left */}
+              {/* Handle tracks */}
               <div
-                className="absolute w-3 h-6 bg-blue-500 rounded-sm cursor-ew-resize shadow-sm pointer-events-auto"
-                style={{ left: `${(rangeStart / 1440) * 100}%`, top: 10, transform: 'translateX(-50%)' }}
+                className="absolute h-5 pointer-events-none"
+                style={{ left: `${fromMinutes / 1440 * 100}%`, width: 20, top: 12, transform: 'translateX(-50%)' }}
+              />
+              <div
+                className="absolute h-5 pointer-events-none"
+                style={{ left: `${toMinutes / 1440 * 100}%`, width: 20, top: 12, transform: 'translateX(-50%)' }}
               />
               
-              {/* Handle right */}
+              {/* Handles */}
               <div
-                className="absolute w-3 h-6 bg-blue-500 rounded-sm cursor-ew-resize shadow-sm pointer-events-auto"
-                style={{ left: `${(rangeEnd / 1440) * 100}%`, top: 10, transform: 'translateX(-50%)' }}
-              />
+                className="absolute w-4 h-6 cursor-ew-resize rounded-sm"
+                style={{
+                  left: `${fromMinutes / 1440 * 100}%`,
+                  top: 12,
+                  transform: 'translateX(-50%)',
+                  background: 'rgba(59, 130, 246, 0.15)',
+                }}
+                onMouseDown={(e) => handleRulerMouseDown(e, 'from')}
+              >
+                <div
+                  className="absolute w-1 h-5 bg-blue-400 rounded-full"
+                  style={{ left: '50%', top: 0, transform: 'translateX(-50%)' }}
+                />
+              </div>
+              <div
+                className="absolute w-4 h-6 cursor-ew-resize rounded-sm"
+                style={{
+                  left: `${toMinutes / 1440 * 100}%`,
+                  top: 12,
+                  transform: 'translateX(-50%)',
+                  background: 'rgba(59, 130, 246, 0.15)',
+                }}
+                onMouseDown={(e) => handleRulerMouseDown(e, 'to')}
+              >
+                <div
+                  className="absolute w-1 h-5 bg-blue-400 rounded-full"
+                  style={{ left: '50%', top: 0, transform: 'translateX(-50%)' }}
+                />
+              </div>
+              
+              {/* Subtle inner shadow */}
+              <div className="absolute inset-0 pointer-events-none" style={{ boxShadow: "inset 0 1px 2px rgba(0,0,0,0.3)" }} />
             </div>
           </div>
 
