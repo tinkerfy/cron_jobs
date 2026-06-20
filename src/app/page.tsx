@@ -450,6 +450,15 @@ export default function Home() {
                           <code className="text-sm bg-slate-100 dark:bg-slate-700 px-2 py-0.5 rounded text-slate-700 dark:text-slate-300 font-mono">
                             {job.schedule}
                           </code>
+                          {job.server && (
+                            <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
+                              job.server === "Prod1" ? "bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300"
+                              : job.server === "Prod2" ? "bg-orange-100 dark:bg-orange-900/40 text-orange-700 dark:text-orange-300"
+                              : "bg-teal-100 dark:bg-teal-900/40 text-teal-700 dark:text-teal-300"
+                            }`}>
+                              {job.server}
+                            </span>
+                          )}
                           <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
                             totalCount > 0
                               ? "bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300"

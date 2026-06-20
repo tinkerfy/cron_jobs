@@ -6,6 +6,8 @@ interface CronJob {
   name: string;
   schedule: string;
   description: string;
+  server: string | null;
+  compositeservicename: string | null;
 }
 
 export async function GET(request: NextRequest) {
@@ -15,16 +17,18 @@ export async function GET(request: NextRequest) {
     const toDate = searchParams.get("to");
 
     const [result] = await pool.query(
-      `SELECT name, minutes, hours, days, months, weeks, description
+      `SELECT name, minutes, hours, days, months, weeks, server, compositeservicename, description
         FROM cron_jobs
         WHERE enabled = true
         ORDER BY name`
     );
 
-    const jobs: CronJob[] = result.map((row: { name: string; minutes: string; hours: string; days: string; months: string; weeks: string; description: string }) => ({
+    const jobs: CronJob[] = result.map((row: { name: string; minutes: string; hours: string; days: string; months: string; weeks: string; server: string | null; compositeservicename: string | null; description: string }) => ({
       name: row.name,
       schedule: `${row.minutes} ${row.hours} ${row.days} ${row.months} ${row.weeks}`,
       description: generateScheduleDescription(`${row.minutes} ${row.hours} ${row.days} ${row.months} ${row.weeks}`),
+      server: row.server,
+      compositeservicename: row.compositeservicename,
     }));
 
     // If no date range provided, return raw jobs
