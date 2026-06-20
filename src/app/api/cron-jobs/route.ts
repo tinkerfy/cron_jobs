@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import pool from "@/app/lib/db";
-import { cronMatches, MatchedJob } from "@/app/lib/cron";
+import { cronMatches } from "@/app/lib/cron";
 
 interface CronJob {
   name: string;
@@ -14,14 +14,14 @@ export async function GET(request: NextRequest) {
     const fromDate = searchParams.get("from");
     const toDate = searchParams.get("to");
 
-    const result = await pool.query(
+    const [result] = await pool.query(
       `SELECT name, schedule, description
-       FROM cron_jobs
-       WHERE enabled = true
-       ORDER BY name`
+        FROM cron_jobs
+        WHERE enabled = true
+        ORDER BY name`
     );
 
-    const jobs: CronJob[] = result.rows.map((row: { name: string; schedule: string; description: string }) => ({
+    const jobs: CronJob[] = result.map((row: { name: string; schedule: string; description: string }) => ({
       name: row.name,
       schedule: row.schedule,
       description: row.description,

@@ -17,14 +17,15 @@ src/app/
   layout.tsx        # Geist fonts, metadata
   globals.css       # Tailwind v4 via @import
   api/cron-jobs/
-    route.ts        # GET — fetches enabled jobs from PostgreSQL, server-side cron matching
-  lib/
-    cron.ts         # Custom local-time cron evaluator, date formatting, MatchedJob types
-    db.ts           # pg connection pool
+     route.ts        # GET — fetches enabled jobs from MySQL, server-side cron matching
+   lib/
+     cron.ts         # Custom local-time cron evaluator, date formatting, MatchedJob types
+     db.ts           # mysql2 connection pool
 ```
 
-## PostgreSQL
-- Host: `localhost:5432` · Database: `cronjobs` · User: `postgres` · Password: `postgress` (in `db.ts`)
+## MySQL
+- Host: `localhost:3306` · Database: `cronjobs` · User: `root` · Password: `postgress` (in `db.ts`)
+- Docker: `docker compose up -d` to start
 - Table: `cron_jobs` — columns: `name`, `schedule`, `description`, `enabled`, `created_at`, `updated_at`
 - Only enabled jobs are returned by the API.
 
