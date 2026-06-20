@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import pool from "@/app/lib/db";
-import { cronMatches } from "@/app/lib/cron";
+import { cronMatches, generateScheduleDescription } from "@/app/lib/cron";
 
 interface CronJob {
   name: string;
@@ -15,16 +15,16 @@ export async function GET(request: NextRequest) {
     const toDate = searchParams.get("to");
 
     const [result] = await pool.query(
-      `SELECT name, schedule, description
+      `SELECT name, minutes, hours, days, months, weeks, description
         FROM cron_jobs
         WHERE enabled = true
         ORDER BY name`
     );
 
-    const jobs: CronJob[] = result.map((row: { name: string; schedule: string; description: string }) => ({
+    const jobs: CronJob[] = result.map((row: { name: string; minutes: string; hours: string; days: string; months: string; weeks: string; description: string }) => ({
       name: row.name,
-      schedule: row.schedule,
-      description: row.description,
+      schedule: `${row.minutes} ${row.hours} ${row.days} ${row.months} ${row.weeks}`,
+      description: generateScheduleDescription(`${row.minutes} ${row.hours} ${row.days} ${row.months} ${row.weeks}`),
     }));
 
     // If no date range provided, return raw jobs

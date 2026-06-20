@@ -170,3 +170,262 @@ export function toTimeInput(date: Date): string {
   const m = String(date.getMinutes()).padStart(2, "0");
   return `${h}:${m}`;
 }
+
+const MONTH_NAMES = [
+  "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+  "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+];
+
+const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+function formatHour(h: number): string {
+  const period = h >= 12 ? "PM" : "AM";
+  const display = h === 0 ? 12 : h > 12 ? h - 12 : h;
+  return `${display}:00 ${period}`;
+}
+
+function formatHourRange(start: number, end: number): string {
+  return `${formatHour(start)}–${formatHour(end)}`;
+}
+
+export function generateScheduleDescription(schedule: string): string {
+  const parts = schedule.trim().split(/\s+/);
+  if (parts.length < 5) return schedule;
+
+  const [minute, hour, dayOfMonth, month, dayOfWeek] = parts;
+
+  // Check for step pattern on minute
+  const minuteStep = minute.startsWith("*/") ? parseInt(minute.split("/")[1]) : null;
+
+  // Check for single hour value
+  const singleHour = !hour.includes(",") && !hour.includes("-") && hour !== "*" && !hour.startsWith("*") ? parseInt(hour) : null;
+
+  // Check for multiple hour values
+  const hourValues = hour.includes(",") ? hour.split(",").map(Number) : null;
+
+  // Check for hour range
+  const hourRange = hour.includes("-") ? hour.split("-").map(Number) : null;
+
+  // Check for day of week constraint
+  const dowValues = dayOfWeek.includes(",") ? dayOfWeek.split(",").map(Number) : null;
+  const dowRange = dayOfWeek.includes("-") ? dayOfWeek.split("-").map(Number) : null;
+  const isWeekdays = (dowRange && dowRange[0] === 1 && dowRange[1] === 5) ||
+                     (dowValues && dowValues.length === 5 && dowValues[0] === 1 && dowValues[4] === 5);
+  const isWeekends = (dowRange && dowRange[0] === 0 && dowRange[1] === 6) ||
+                     (dowValues && dowValues.length === 2 && dowValues[0] === 0 && dowValues[1] === 6);
+
+  // Check for day of month constraint (full range 1-31 = unconstrained)
+  const isDayOfMonth = dayOfMonth !== "*" && !(dayOfMonth.includes("-") && (() => { const r = dayOfMonth.split("-").map(Number); return r[0] === 1 && r[1] === 31; })());
+  const dayOfMonthValues = isDayOfMonth && dayOfMonth.includes(",") ? dayOfMonth.split(",").map(Number) : null;
+
+  // Check for month constraint (full range 1-12 = unconstrained)
+  const isMonth = month !== "*" && !(month.includes("-") && (() => { const r = month.split("-").map(Number); return r[0] === 1 && r[1] === 12; })());
+  const monthValues = isMonth && month.includes(",") ? month.split(",").map(Number) : null;
+  const monthRange = isMonth && month.includes("-") ? month.split("-").map(Number) : null;
+
+  // === Build description ===
+
+  // Case 1: Every N minutes (with possible hour/day/month constraints)
+  if (minuteStep) {
+    let desc = `Every ${minuteStep} min`;
+    if (hourRange) {
+      desc += `, ${formatHourRange(hourRange[0], hourRange[1])}`;
+    } else if (hourValues && hourValues.length <= 6) {
+      desc += `, ${hourValues.map(formatHour).join(", ")}`;
+    } else if (singleHour !== null) {
+      desc += `, at ${formatHour(singleHour)}`;
+    }
+    if (isWeekdays) desc += ", weekdays";
+    else if (isWeekends) desc += ", weekends";
+    else if (dowValues && dowValues.length > 0) desc += `, ${dowValues.map((d) => DAY_NAMES[d]).join(", ")}`;
+    if (isMonth) {
+      if (monthRange) desc += `, ${MONTH_NAMES[monthRange[0] - 1]}–${MONTH_NAMES[monthRange[1] - 1]}`;
+      else if (monthValues && monthValues.length <= 4) desc += `, ${monthValues.map((m) => MONTH_NAMES[m - 1]).join(", ")}`;
+      else desc += `, ${MONTH_NAMES[parseInt(month) - 1]}`;
+    }
+    return desc;
+  }
+
+  // Case 2: Single minute + single hour + no day/month constraints = "Daily at H:MM"
+  if (singleHour !== null && !isDayOfMonth && !isMonth && dayOfWeek === "*") {
+    return `Daily at ${formatHour(singleHour)}`;
+  }
+
+  // Case 3: Single minute + multiple hours = "Daily at H1:00, H2:00, ..."
+  if (singleHour !== null && hourValues && hourValues.length > 1 && !isDayOfMonth && !isMonth && dayOfWeek === "*") {
+    return `Daily at ${hourValues.map(formatHour).join(", ")}`;
+  }
+
+  // Case 4: Single minute + single hour + day of week = "Weekdays at H:00" etc.
+  if (singleHour !== null && !isDayOfMonth && !isMonth) {
+    if (isWeekdays) return `Weekdays at ${formatHour(singleHour)}`;
+    if (isWeekends) return `Weekends at ${formatHour(singleHour)}`;
+    if (dowValues) return `${dowValues.map((d) => DAY_NAMES[d]).join(", ")} at ${formatHour(singleHour)}`;
+  }
+
+  // Case 5: Single minute + single hour + day of month = "Monthly on D at H:00"
+  if (singleHour !== null && isDayOfMonth && !isMonth && dayOfWeek === "*") {
+    if (dayOfMonthValues && dayOfMonthValues.length <= 4) {
+      return `Monthly on days ${dayOfMonthValues.join(", ")} at ${formatHour(singleHour)}`;
+    }
+    return `Monthly on day ${dayOfMonth} at ${formatHour(singleHour)}`;
+  }
+
+  // Case 6: Single minute + single hour + month = "Yearly on M on D at H:00"
+  if (singleHour !== null && isMonth && dayOfWeek === "*") {
+    let timePart = `at ${formatHour(singleHour)}`;
+    if (isDayOfMonth) {
+      if (dayOfMonthValues && dayOfMonthValues.length <= 4) {
+        timePart = `on days ${dayOfMonthValues.join(", ")} ${timePart}`;
+      } else {
+        timePart = `on day ${dayOfMonth} ${timePart}`;
+      }
+    }
+    if (monthRange) return `Yearly, ${MONTH_NAMES[monthRange[0] - 1]}–${MONTH_NAMES[monthRange[1] - 1]} ${timePart}`;
+    if (monthValues && monthValues.length <= 4) return `Yearly, ${monthValues.map((m) => MONTH_NAMES[m - 1]).join(", ")} ${timePart}`;
+    return `Yearly in ${MONTH_NAMES[parseInt(month) - 1]} ${timePart}`;
+  }
+
+  // Case 7: Single minute + single hour + day of month + day of week
+  if (singleHour !== null && isDayOfMonth && dayOfWeek !== "*") {
+    let desc: string;
+    if (dayOfMonthValues && dayOfMonthValues.length <= 4) {
+      desc = `Monthly on days ${dayOfMonthValues.join(", ")} at ${formatHour(singleHour)}`;
+    } else {
+      desc = `Monthly on day ${dayOfMonth} at ${formatHour(singleHour)}`;
+    }
+    if (isWeekdays) desc += ", weekdays";
+    else if (isWeekends) desc += ", weekends";
+    else if (dowValues) desc += `, ${dowValues.map((d) => DAY_NAMES[d]).join(", ")}`;
+    return desc;
+  }
+
+  // Case 8: Multiple minutes (At :N, :M, ...)
+  if (minute.includes(",")) {
+    const mins = minute.split(",").map(Number);
+    let desc = mins.length <= 4
+      ? `At :${mins.map((m) => String(m).padStart(2, "0")).join(", ")}`
+      : `At :${minute}`;
+    if (hourRange) desc += `, ${formatHourRange(hourRange[0], hourRange[1])}`;
+    else if (hourValues && hourValues.length <= 6) desc += `, ${hourValues.map(formatHour).join(", ")}`;
+    else if (singleHour !== null) desc += `, at ${formatHour(singleHour)}`;
+    if (isWeekdays) desc += ", weekdays";
+    else if (isWeekends) desc += ", weekends";
+    else if (dowValues) desc += `, ${dowValues.map((d) => DAY_NAMES[d]).join(", ")}`;
+    if (isMonth) {
+      if (monthRange) desc += `, ${MONTH_NAMES[monthRange[0] - 1]}–${MONTH_NAMES[monthRange[1] - 1]}`;
+      else if (monthValues && monthValues.length <= 4) desc += `, ${monthValues.map((m) => MONTH_NAMES[m - 1]).join(", ")}`;
+      else desc += `, ${MONTH_NAMES[parseInt(month) - 1]}`;
+    }
+    return desc;
+  }
+
+  // Case 9: Minute range
+  if (minute.includes("-")) {
+    const [s, e] = minute.split("-").map(Number);
+    let desc = `Mins ${s}–${e}`;
+    if (hourRange) desc += `, ${formatHourRange(hourRange[0], hourRange[1])}`;
+    else if (hourValues && hourValues.length <= 6) desc += `, ${hourValues.map(formatHour).join(", ")}`;
+    else if (singleHour !== null) desc += `, at ${formatHour(singleHour)}`;
+    if (isWeekdays) desc += ", weekdays";
+    else if (isWeekends) desc += ", weekends";
+    else if (dowValues) desc += `, ${dowValues.map((d) => DAY_NAMES[d]).join(", ")}`;
+    if (isMonth) {
+      if (monthRange) desc += `, ${MONTH_NAMES[monthRange[0] - 1]}–${MONTH_NAMES[monthRange[1] - 1]}`;
+      else if (monthValues && monthValues.length <= 4) desc += `, ${monthValues.map((m) => MONTH_NAMES[m - 1]).join(", ")}`;
+      else desc += `, ${MONTH_NAMES[parseInt(month) - 1]}`;
+    }
+    return desc;
+  }
+
+  // Case 10: Every hour (minute = * already handled in Case 11)
+  if (hour === "*") {
+    // Specific minute every hour: "At :MM, every hour"
+    if (minute !== "*") {
+      let desc = `At :${minute}`;
+      if (isWeekdays) desc += ", weekdays";
+      else if (isWeekends) desc += ", weekends";
+      else if (dowValues && dowValues.length > 0) desc += `, ${dowValues.map((d) => DAY_NAMES[d]).join(", ")}`;
+      if (isMonth) {
+        if (monthRange) desc += `, ${MONTH_NAMES[monthRange[0] - 1]}–${MONTH_NAMES[monthRange[1] - 1]}`;
+        else if (monthValues && monthValues.length <= 4) desc += `, ${monthValues.map((m) => MONTH_NAMES[m - 1]).join(", ")}`;
+        else desc += `, ${MONTH_NAMES[parseInt(month) - 1]}`;
+      }
+      return desc;
+    }
+    if (dayOfWeek !== "*" && !isWeekdays && !isWeekends && dowValues) {
+      return `${dowValues.map((d) => DAY_NAMES[d]).join(", ")} every hour`;
+    }
+    return "Every hour";
+  }
+
+  // Case 11: Every minute (minute = *) with hour range 0-23 = every minute
+  if (minute === "*" && (hour === "*" || hour === "0-23")) {
+    if (isWeekdays) return "Every minute, weekdays";
+    if (isWeekends) return "Every minute, weekends";
+    if (dowValues && dowValues.length > 0) return `${dowValues.map((d) => DAY_NAMES[d]).join(", ")} every minute`;
+    return "Every minute";
+  }
+
+  // Case 12: Every minute at specific hours
+  if (minute === "*" && hourValues && hourValues.length > 0) {
+    let desc = `Every minute`;
+    desc += `, ${hourValues.map(formatHour).join(", ")}`;
+    if (isWeekdays) desc += ", weekdays";
+    else if (isWeekends) desc += ", weekends";
+    else if (dowValues && dowValues.length > 0) desc += `, ${dowValues.map((d) => DAY_NAMES[d]).join(", ")}`;
+    if (isMonth) {
+      if (monthRange) desc += `, ${MONTH_NAMES[monthRange[0] - 1]}–${MONTH_NAMES[monthRange[1] - 1]}`;
+      else if (monthValues && monthValues.length <= 4) desc += `, ${monthValues.map((m) => MONTH_NAMES[m - 1]).join(", ")}`;
+      else desc += `, ${MONTH_NAMES[parseInt(month) - 1]}`;
+    }
+    return desc;
+  }
+
+  // Case 13: Every minute in hour range
+  if (minute === "*" && hourRange) {
+    let desc = `Every minute, ${formatHourRange(hourRange[0], hourRange[1])}`;
+    if (isWeekdays) desc += ", weekdays";
+    else if (isWeekends) desc += ", weekends";
+    else if (dowValues && dowValues.length > 0) desc += `, ${dowValues.map((d) => DAY_NAMES[d]).join(", ")}`;
+    if (isMonth) {
+      if (monthRange) desc += `, ${MONTH_NAMES[monthRange[0] - 1]}–${MONTH_NAMES[monthRange[1] - 1]}`;
+      else if (monthValues && monthValues.length <= 4) desc += `, ${monthValues.map((m) => MONTH_NAMES[m - 1]).join(", ")}`;
+      else desc += `, ${MONTH_NAMES[parseInt(month) - 1]}`;
+    }
+    return desc;
+  }
+
+  // Case 14: Specific minute with hour range (e.g., "0 9-17 * * *")
+  if (hourRange) {
+    let desc = `At :${minute}`;
+    desc += `, ${formatHourRange(hourRange[0], hourRange[1])}`;
+    if (isWeekdays) desc += ", weekdays";
+    else if (isWeekends) desc += ", weekends";
+    else if (dowValues && dowValues.length > 0) desc += `, ${dowValues.map((d) => DAY_NAMES[d]).join(", ")}`;
+    if (isMonth) {
+      if (monthRange) desc += `, ${MONTH_NAMES[monthRange[0] - 1]}–${MONTH_NAMES[monthRange[1] - 1]}`;
+      else if (monthValues && monthValues.length <= 4) desc += `, ${monthValues.map((m) => MONTH_NAMES[m - 1]).join(", ")}`;
+      else desc += `, ${MONTH_NAMES[parseInt(month) - 1]}`;
+    }
+    return desc;
+  }
+
+  // Case 15: Specific minute with specific hours (e.g., "0 9,12,15 * * *")
+  if (hourValues && hourValues.length > 0) {
+    let desc = `At :${minute}`;
+    desc += `, ${hourValues.map(formatHour).join(", ")}`;
+    if (isWeekdays) desc += ", weekdays";
+    else if (isWeekends) desc += ", weekends";
+    else if (dowValues && dowValues.length > 0) desc += `, ${dowValues.map((d) => DAY_NAMES[d]).join(", ")}`;
+    if (isMonth) {
+      if (monthRange) desc += `, ${MONTH_NAMES[monthRange[0] - 1]}–${MONTH_NAMES[monthRange[1] - 1]}`;
+      else if (monthValues && monthValues.length <= 4) desc += `, ${monthValues.map((m) => MONTH_NAMES[m - 1]).join(", ")}`;
+      else desc += `, ${MONTH_NAMES[parseInt(month) - 1]}`;
+    }
+    return desc;
+  }
+
+  // Fallback
+  return schedule;
+}

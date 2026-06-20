@@ -24,6 +24,7 @@ export default function Home() {
   });
   const [toTime, setToTime] = useState("23:59");
   const [filterApplied, setFilterApplied] = useState(false);
+  const [showExecutionDates, setShowExecutionDates] = useState(true);
 
   const fromMinutes = parseInt(fromTime.split(':')[0]) * 60 + parseInt(fromTime.split(':')[1]);
   const toMinutes = parseInt(toTime.split(':')[0]) * 60 + parseInt(toTime.split(':')[1]);
@@ -308,6 +309,7 @@ export default function Home() {
           {/* Quick range buttons */}
           <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-slate-100 dark:border-slate-700">
             <span className="text-xs text-slate-400 dark:text-slate-500 self-center mr-2">Quick:</span>
+            <div className="flex flex-wrap gap-2">
             {([
               [0, "Today"],
               [1, "1 Day"],
@@ -366,6 +368,17 @@ export default function Home() {
                 </button>
               );
             })}
+            </div>
+            <button
+              onClick={() => setShowExecutionDates(!showExecutionDates)}
+              className={`ml-auto text-xs px-3 py-1 rounded-full transition-colors ${
+                showExecutionDates
+                  ? "bg-blue-100 hover:bg-blue-200 dark:bg-blue-900/40 dark:hover:bg-blue-800/40 text-blue-700 dark:text-blue-300"
+                  : "bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-600 dark:text-slate-300"
+              }`}
+            >
+              {showExecutionDates ? "Hide Dates" : "Show Dates"}
+            </button>
           </div>
         </div>
 
@@ -452,7 +465,7 @@ export default function Home() {
                     </div>
 
                     {/* Matched dates */}
-                    {totalCount > 0 && (
+                    {totalCount > 0 && showExecutionDates && (
                       <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-700">
                         <p className="text-xs font-medium text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2">
                           Execution dates
