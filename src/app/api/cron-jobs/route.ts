@@ -7,7 +7,7 @@ interface CronJob {
   schedule: string;
   description: string;
   server: string | null;
-  compositeservicename: string | null;
+  compositeServiceName: string | null;
 }
 
 export async function GET(request: NextRequest) {
@@ -15,12 +15,29 @@ export async function GET(request: NextRequest) {
     const { searchParams } = request.nextUrl;
     const fromDate = searchParams.get("from");
     const toDate = searchParams.get("to");
+    const compositeServiceName = searchParams.get("compositeServiceName");
+    const server = searchParams.get("server");
+
+    const whereClauses: string[] = ["enabled = true"];
+    const params: (string | number)[] = [];
+
+    if (compositeServiceName) {
+      whereClauses.push("compositeservicename LIKE ?");
+      params.push(`${compositeServiceName}%`);
+    }
+    if (server) {
+      whereClauses.push("server = ?");
+      params.push(server);
+    }
+
+    const whereClause = whereClauses.length > 1 ? `WHERE ${whereClauses.join(" AND ")}` : "";
 
     const [result] = await pool.query(
       `SELECT name, minutes, hours, days, months, weeks, server, compositeservicename, description
         FROM cron_jobs
-        WHERE enabled = true
-        ORDER BY name`
+        ${whereClause}
+        ORDER BY name`,
+      params
     );
 
     const jobs: CronJob[] = result.map((row: { name: string; minutes: string; hours: string; days: string; months: string; weeks: string; server: string | null; compositeservicename: string | null; description: string }) => ({
@@ -28,7 +45,7 @@ export async function GET(request: NextRequest) {
       schedule: `${row.minutes} ${row.hours} ${row.days} ${row.months} ${row.weeks}`,
       description: generateScheduleDescription(`${row.minutes} ${row.hours} ${row.days} ${row.months} ${row.weeks}`),
       server: row.server,
-      compositeservicename: row.compositeservicename,
+      compositeServiceName: row.compositeservicename,
     }));
 
     // If no date range provided, return raw jobs
@@ -64,7 +81,7 @@ export async function GET(request: NextRequest) {
         matchedDates: matchedDates.map(d => d.toISOString()),
         totalCount: matchedDates.length,
       };
-    }).filter((r: { totalCount: number }) => r.totalCount > 0);
+    });
 
     return NextResponse.json(results);
   } catch (error) {

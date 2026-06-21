@@ -25,6 +25,10 @@ export default function Home() {
   const [toTime, setToTime] = useState("23:59");
   const [filterApplied, setFilterApplied] = useState(false);
   const [showExecutionDates, setShowExecutionDates] = useState(true);
+  const [compositeServiceFilter, setCompositeServiceFilter] = useState("");
+  const [serverFilter, setServerFilter] = useState("");
+  const [allCompositeServices, setAllCompositeServices] = useState<string[]>([]);
+  const [allServers, setAllServers] = useState<string[]>([]);
 
   const fromMinutes = parseInt(fromTime.split(':')[0]) * 60 + parseInt(fromTime.split(':')[1]);
   const toMinutes = parseInt(toTime.split(':')[0]) * 60 + parseInt(toTime.split(':')[1]);
@@ -91,17 +95,36 @@ export default function Home() {
       .catch((err) => console.error("Failed to load cron jobs:", err));
   }, []);
 
+  useEffect(() => {
+    fetch("/api/filters")
+      .then((res) => {
+        if (!res.ok) throw new Error("Failed to load filters");
+        return res.json();
+      })
+      .then((data) => {
+        setAllCompositeServices(data.compositeservicename || []);
+        setAllServers(data.servers || []);
+      })
+      .catch((err) => console.error("Failed to load filters:", err));
+  }, []);
+
   const fetchResults = useCallback((from: Date, to: Date) => {
     const fmt = (d: Date) =>
       `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}T${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
-    fetch(`/api/cron-jobs?from=${encodeURIComponent(fmt(from))}&to=${encodeURIComponent(fmt(to))}`)
+    const params = new URLSearchParams({
+      from: fmt(from),
+      to: fmt(to),
+    });
+    if (compositeServiceFilter) params.set("compositeServiceName", compositeServiceFilter);
+    if (serverFilter) params.set("server", serverFilter);
+    fetch(`/api/cron-jobs?${params.toString()}`)
       .then((res) => {
         if (!res.ok) throw new Error("Failed to fetch filtered jobs");
         return res.json();
       })
       .then((data: MatchedJob[]) => setResults(data.map(r => ({ ...r, matchedDates: r.matchedDates.map(d => new Date(d)) }))))
       .catch((err) => console.error("Failed to fetch filtered jobs:", err));
-  }, []);
+  }, [compositeServiceFilter, serverFilter, fromDate, fromTime, toDate, toTime]);
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -118,6 +141,8 @@ export default function Home() {
   const handleReset = useCallback(() => {
     setFilterApplied(false);
     setResults(null);
+    setCompositeServiceFilter("");
+    setServerFilter("");
   }, []);
 
   const matchingCount = results?.length ?? 0;
@@ -176,6 +201,37 @@ export default function Home() {
                   className="w-28 px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none text-sm font-mono"
                 />
               </div>
+            </div>
+            <div className="w-full sm:w-48">
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                Composite Service
+              </label>
+              <input
+                type="text"
+                value={compositeServiceFilter}
+                onChange={(e) => {
+                  setCompositeServiceFilter(e.target.value);
+                }}
+                placeholder="All Services"
+                className="w-full px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none text-sm"
+              />
+            </div>
+            <div className="w-full sm:w-40">
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                Server
+              </label>
+              <select
+                value={serverFilter}
+                onChange={(e) => {
+                  setServerFilter(e.target.value);
+                }}
+                className="w-full px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none text-sm"
+              >
+                <option value="">All Servers</option>
+                {allServers.map((s) => (
+                  <option key={s} value={s}>{s}</option>
+                ))}
+              </select>
             </div>
             <div className="flex gap-3">
               <button
@@ -445,7 +501,7 @@ export default function Home() {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-3 flex-wrap">
                           <h3 className="font-semibold text-slate-900 dark:text-white">
-                            {job.name}
+                            {job.compositeServiceName || 'NULL'}
                           </h3>
                           <code className="text-sm bg-slate-100 dark:bg-slate-700 px-2 py-0.5 rounded text-slate-700 dark:text-slate-300 font-mono">
                             {job.schedule}

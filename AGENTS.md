@@ -26,7 +26,7 @@ src/app/
 ## MySQL
 - Host: `localhost:3306` · Database: `cronjobs` · User: `root` · Password: `postgress` (in `db.ts`)
 - Docker: `docker compose up -d` to start
-- Table: `cron_jobs` — columns: `name`, `schedule`, `description`, `enabled`, `created_at`, `updated_at`
+- Table: `cron_jobs` — columns: `id`, `name`, `minutes`, `hours`, `days`, `months`, `weeks`, `years`, `description`, `enabled`, `server`, `compositeservicename`, `created_at`, `updated_at`
 - Only enabled jobs are returned by the API.
 
 ## Gotchas
