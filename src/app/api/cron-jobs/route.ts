@@ -8,6 +8,7 @@ interface CronJob {
   description: string;
   server: string | null;
   compositeServiceName: string | null;
+  status: string;
 }
 
 export async function GET(request: NextRequest) {
@@ -18,7 +19,7 @@ export async function GET(request: NextRequest) {
     const compositeServiceName = searchParams.get("compositeServiceName");
     const server = searchParams.get("server");
 
-    const whereClauses: string[] = ["enabled = true"];
+    const whereClauses: string[] = [];
     const params: (string | number)[] = [];
 
     if (compositeServiceName) {
@@ -30,22 +31,23 @@ export async function GET(request: NextRequest) {
       params.push(server);
     }
 
-    const whereClause = whereClauses.length > 1 ? `WHERE ${whereClauses.join(" AND ")}` : "";
+    const whereClause = whereClauses.length > 0 ? `WHERE ${whereClauses.join(" AND ")}` : "";
 
     const [result] = await pool.query(
-      `SELECT name, minutes, hours, days, months, weeks, server, compositeservicename, description
+      `SELECT name, minutes, hours, days, months, weeks, server, compositeservicename, status, description
         FROM cron_jobs
         ${whereClause}
         ORDER BY name`,
       params
-    );
+    ) as unknown as [{ name: string; minutes: string; hours: string; days: string; months: string; weeks: string; server: string | null; compositeservicename: string | null; status: string; description: string }[]];
 
-    const jobs: CronJob[] = result.map((row: { name: string; minutes: string; hours: string; days: string; months: string; weeks: string; server: string | null; compositeservicename: string | null; description: string }) => ({
+    const jobs: CronJob[] = result.map((row) => ({
       name: row.name,
       schedule: `${row.minutes} ${row.hours} ${row.days} ${row.months} ${row.weeks}`,
       description: generateScheduleDescription(`${row.minutes} ${row.hours} ${row.days} ${row.months} ${row.weeks}`),
       server: row.server,
       compositeServiceName: row.compositeservicename,
+      status: row.status,
     }));
 
     // If no date range provided, return raw jobs

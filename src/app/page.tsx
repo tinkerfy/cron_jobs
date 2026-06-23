@@ -126,6 +126,12 @@ export default function Home() {
       .catch((err) => console.error("Failed to fetch filtered jobs:", err));
   }, [compositeServiceFilter, serverFilter, fromDate, fromTime, toDate, toTime]);
 
+  useEffect(() => {
+    const from = buildDateTime(fromDate, fromTime);
+    const to = buildDateTime(toDate, toTime);
+    fetchResults(from, to);
+  }, []);
+
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const defaultTo = new Date(today);
@@ -160,72 +166,82 @@ export default function Home() {
         </div>
       </header>
 
-      <main className="max-w-6xl mx-auto px-6 py-8">
+      <main className="max-w-7xl mx-auto px-6 py-8">
         {/* Filter Panel */}
-        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6 mb-8">
-          <div className="flex flex-col sm:flex-row sm:items-end gap-6">
-            <div className="flex-1">
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+        <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg border border-slate-200 dark:border-slate-700 p-8 mb-10">
+          <div className="flex items-center gap-3 mb-6">
+            <svg className="w-5 h-5 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-2.414 2.414a1 1 0 01-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+            </svg>
+            <h2 className="text-lg font-semibold text-slate-800 dark:text-slate-200">Filter Jobs</h2>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+            {/* From */}
+            <div>
+              <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">
                 From
               </label>
-              <div className="flex gap-3">
+              <div className="flex gap-2">
                 <input
                   type="date"
                   value={fromDate}
                   onChange={(e) => setFromDate(e.target.value)}
-                  className="flex-1 px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                  className="flex-1 px-3 py-2.5 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none text-sm"
                 />
                 <input
                   type="time"
                   value={fromTime}
                   onChange={(e) => setFromTime(e.target.value)}
-                  className="w-28 px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none text-sm font-mono"
+                  className="w-24 px-3 py-2.5 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none text-sm font-mono"
                 />
               </div>
             </div>
-            <div className="flex-1">
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+
+            {/* To */}
+            <div>
+              <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">
                 To
               </label>
-              <div className="flex gap-3">
+              <div className="flex gap-2">
                 <input
                   type="date"
                   value={toDate}
                   onChange={(e) => setToDate(e.target.value)}
-                  className="flex-1 px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                  className="flex-1 px-3 py-2.5 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none text-sm"
                 />
                 <input
                   type="time"
                   value={toTime}
                   onChange={(e) => setToTime(e.target.value)}
-                  className="w-28 px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none text-sm font-mono"
+                  className="w-24 px-3 py-2.5 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none text-sm font-mono"
                 />
               </div>
             </div>
-            <div className="w-full sm:w-48">
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                Composite Service
+
+            {/* Composite Service */}
+            <div>
+              <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">
+                Service
               </label>
               <input
                 type="text"
                 value={compositeServiceFilter}
-                onChange={(e) => {
-                  setCompositeServiceFilter(e.target.value);
-                }}
-                placeholder="All Services"
-                className="w-full px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none text-sm"
+                onChange={(e) => setCompositeServiceFilter(e.target.value)}
+                placeholder="Filter by service…"
+                className="w-full px-3 py-2.5 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none text-sm placeholder:text-slate-400 dark:placeholder:text-slate-500"
               />
             </div>
-            <div className="w-full sm:w-40">
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+
+            {/* Server */}
+            <div>
+              <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">
                 Server
               </label>
               <select
                 value={serverFilter}
-                onChange={(e) => {
-                  setServerFilter(e.target.value);
-                }}
-                className="w-full px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none text-sm"
+                onChange={(e) => setServerFilter(e.target.value)}
+                className="w-full px-3 py-2.5 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none text-sm"
               >
                 <option value="">All Servers</option>
                 {allServers.map((s) => (
@@ -233,19 +249,27 @@ export default function Home() {
                 ))}
               </select>
             </div>
-            <div className="flex gap-3">
+
+            {/* Actions */}
+            <div className="flex items-end gap-2">
               <button
                 onClick={handleFilter}
-                className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors shadow-sm"
+                className="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors shadow-sm flex items-center justify-center"
+                title="Filter"
               >
-                Filter
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
               </button>
               {filterApplied && (
                 <button
                   onClick={handleReset}
-                  className="px-6 py-3 bg-slate-200 hover:bg-slate-300 dark:bg-slate-600 dark:hover:bg-slate-500 text-slate-700 dark:text-slate-200 font-medium rounded-lg transition-colors"
+                  className="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-600 dark:text-slate-300 font-medium rounded-lg transition-colors"
+                  title="Reset filters"
                 >
-                  Reset
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
                 </button>
               )}
             </div>
@@ -388,7 +412,7 @@ export default function Home() {
                     setFilterApplied(true);
                     fetchResults(quickFrom, quickTo);
                   }}
-                  className="text-xs px-3 py-1 rounded-full bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-600 dark:text-slate-300 transition-colors"
+                  className="text-[10px] px-2 py-0.5 rounded-full bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-600 dark:text-slate-300 transition-colors"
                 >
                   {label}
                 </button>
@@ -418,7 +442,7 @@ export default function Home() {
                     setFilterApplied(true);
                     fetchResults(quickFrom, quickTo);
                   }}
-                  className="text-xs px-3 py-1 rounded-full bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-600 dark:text-slate-300 transition-colors"
+                  className="text-[10px] px-2 py-0.5 rounded-full bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-600 dark:text-slate-300 transition-colors"
                 >
                   {label}
                 </button>
@@ -476,19 +500,21 @@ export default function Home() {
                 <div
                   key={job.name}
                   className={`rounded-xl border shadow-sm transition-all ${
-                    totalCount > 0
-                      ? "bg-white dark:bg-slate-800 border-blue-200 dark:border-blue-800"
-                      : "bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 opacity-60"
+                    job.status === "false"
+                      ? "bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 opacity-50"
+                      : totalCount > 0
+                        ? "bg-white dark:bg-slate-800 border-blue-200 dark:border-blue-800"
+                        : "bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 opacity-60"
                   }`}
                 >
                   <div className="p-5">
                     <div className="flex items-start gap-3">
                       <div className={`mt-0.5 w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 ${
-                        totalCount > 0
+                        job.status === "true"
                           ? "bg-green-100 dark:bg-green-900/40 text-green-600 dark:text-green-400"
-                          : "bg-slate-100 dark:bg-slate-700 text-slate-400"
+                          : "bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-400"
                       }`}>
-                        {totalCount > 0 ? (
+                        {job.status === "true" ? (
                           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
                             <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                           </svg>

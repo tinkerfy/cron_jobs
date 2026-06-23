@@ -3,7 +3,8 @@ export interface CronJob {
   schedule: string;
   description: string;
   server: string | null;
-  compositeservicename: string | null;
+  compositeServiceName: string | null;
+  status: string;
 }
 
 export interface MatchedJob {
