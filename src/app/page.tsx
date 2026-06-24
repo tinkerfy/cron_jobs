@@ -10,6 +10,7 @@ export default function Home() {
   const [servers, setServers] = useState<string[]>([]);
   const [selectedServers, setSelectedServers] = useState<string[]>([]);
   const [selectedStatuses, setSelectedStatuses] = useState<string[]>([]);
+  const [searchService, setSearchService] = useState("");
   const [fromDate, setFromDate] = useState(() => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -115,6 +116,9 @@ export default function Home() {
     if (selectedServers.length > 0) {
       params.set("server", selectedServers.join(","));
     }
+    if (searchService) {
+      params.set("compositeServiceName", searchService);
+    }
     fetch(`/api/cron-jobs?${params.toString()}`)
       .then((res) => {
         if (!res.ok) throw new Error("Failed to fetch filtered jobs");
@@ -122,7 +126,7 @@ export default function Home() {
       })
       .then((data: MatchedJob[]) => setResults(data.map(r => ({ ...r, matchedDates: r.matchedDates.map(d => new Date(d)) }))))
       .catch((err) => console.error("Failed to fetch filtered jobs:", err));
-  }, [selectedServers, selectedStatuses]);
+  }, [selectedServers, selectedStatuses, searchService]);
 
   useEffect(() => {
     const from = buildDateTime(fromDate, fromTime);
@@ -258,6 +262,20 @@ export default function Home() {
                     </button>
                   ))}
                 </div>
+              </div>
+
+              {/* Service search */}
+              <div className="flex-1 min-w-0">
+                <label className="block text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">
+                  Service
+                </label>
+                <input
+                  type="text"
+                  value={searchService}
+                  onChange={(e) => setSearchService(e.target.value)}
+                  placeholder="Search service..."
+                  className="w-full h-7 px-2.5 text-[11px] border border-slate-300 dark:border-slate-700 rounded bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors"
+                />
               </div>
             </div>
 

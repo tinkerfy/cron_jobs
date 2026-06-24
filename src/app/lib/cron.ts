@@ -167,8 +167,9 @@ export function formatDateTime(date: Date): string {
 }
 
 export function buildDateTime(dateStr: string, timeStr: string): Date {
-  if (!timeStr) return new Date(dateStr + "T00:00:00");
-  return new Date(`${dateStr}T${timeStr}`);
+  const [year, month, day] = dateStr.split("-").map(Number);
+  const [hour, minute] = timeStr ? timeStr.split(":").map(Number) : [0, 0];
+  return new Date(year, month - 1, day, hour, minute);
 }
 
 export function toTimeInput(date: Date): string {
