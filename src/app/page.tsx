@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { CronJob, formatDate, formatTime, buildDateTime } from "./lib/cron";
 import { MatchedJob } from "./lib/cron";
+import ThemeToggle from "./theme-toggle";
 
 export default function Home() {
   const [jobs, setJobs] = useState<CronJob[]>([]);
@@ -152,6 +153,7 @@ export default function Home() {
             </p>
           </div>
           <div className="flex items-center gap-3 text-xs text-slate-500 dark:text-slate-400">
+            <ThemeToggle />
             <span className="flex items-center gap-1.5">
               <span className="w-2 h-2 rounded-full bg-green-500"></span>
               {jobs.length} jobs loaded
