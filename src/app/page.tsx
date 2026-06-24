@@ -142,17 +142,17 @@ export default function Home() {
   today.setHours(0, 0, 0, 0);
 
   return (
-    <div className="min-h-screen bg-[#F5FAF7] dark:bg-slate-950">
+    <div className="min-h-screen bg-background dark:bg-[#0a0a0a]">
       {/* Header */}
-      <header className="bg-[#FFFFFF] dark:bg-slate-900 border-b border-[#D9ECD2] dark:border-slate-800">
+      <header className="bg-surface dark:bg-slate-900 border-b border-border dark:border-[#2D4A48]">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
           <div>
-            <h1 className="text-lg font-semibold text-[#204D4C] dark:text-white tracking-tight">Cron Job Viewer</h1>
-            <p className="text-xs text-[#8BAFAD] dark:text-slate-400 mt-0.5">
+            <h1 className="text-lg font-semibold text-text-primary dark:text-foreground tracking-tight">Cron Job Viewer</h1>
+            <p className="text-xs text-text-muted dark:text-[#A0B0AE] mt-0.5">
               View which cron jobs fire within a selected date range
             </p>
           </div>
-          <div className="flex items-center gap-3 text-xs text-[#8BAFAD] dark:text-slate-400">
+          <div className="flex items-center gap-3 text-xs text-text-muted dark:text-[#A0B0AE]">
             <ThemeToggle />
             <span className="flex items-center gap-1.5">
               <span className="w-2 h-2 rounded-full bg-green-500"></span>
@@ -164,9 +164,9 @@ export default function Home() {
 
       <main className="max-w-7xl mx-auto px-6 py-6">
         {/* Filter Panel */}
-        <div className="bg-[#FFFFFF] dark:bg-slate-800/50 rounded-lg border border-[#D9ECD2] dark:border-slate-700 mb-6">
+        <div className="bg-[#FFFFFF] dark:bg-slate-800/50 rounded-lg border border-border dark:border-[#2D4A48] mb-6">
           {/* Panel header */}
-          <div className="px-4 py-2.5 border-b border-[#D9ECD2] dark:border-slate-800 flex items-center justify-between">
+          <div className="px-4 py-2.5 border-b border-border dark:border-[#2D4A48] flex items-center justify-between">
             <span className="text-[11px] font-semibold text-[#204D4C] dark:text-slate-300 uppercase tracking-wider">
               Date Range
               {selectedServers.length > 0 && (
@@ -276,7 +276,7 @@ export default function Home() {
                   value={searchService}
                   onChange={(e) => setSearchService(e.target.value)}
                   placeholder="Search service..."
-                  className="w-full h-7 px-2.5 text-[11px] border border-[#D9ECD2] dark:border-slate-700 rounded bg-[#F5FAF7] dark:bg-slate-800 text-[#204D4C] dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:ring-1 focus:ring-[#51A090] focus:border-[#51A090] outline-none transition-colors"
+                  className="w-full h-7 px-2.5 text-[11px] border border-border dark:border-[#2D4A48] rounded bg-[#F5FAF7] dark:bg-slate-800 text-text-primary dark:text-foreground placeholder-slate-400 dark:placeholder-slate-500 focus:ring-1 focus:ring-[#51A090] focus:border-[#51A090] outline-none transition-colors"
                 />
               </div>
             </div>
@@ -291,7 +291,7 @@ export default function Home() {
                   type="date"
                   value={fromDate}
                   onChange={(e) => setFromDate(e.target.value)}
-                  className="w-full h-8 px-2.5 text-xs border border-[#D9ECD2] dark:border-slate-700 rounded bg-[#F5FAF7] dark:bg-slate-800 text-[#204D4C] dark:text-white focus:ring-1 focus:ring-[#51A090] focus:border-[#51A090] outline-none transition-colors"
+                  className="w-full h-8 px-2.5 text-xs border border-border dark:border-[#2D4A48] rounded bg-[#F5FAF7] dark:bg-slate-800 text-text-primary dark:text-foreground focus:ring-1 focus:ring-[#51A090] focus:border-[#51A090] outline-none transition-colors"
                 />
               </div>
 
@@ -304,7 +304,7 @@ export default function Home() {
                   type="time"
                   value={fromTime}
                   onChange={(e) => setFromTime(e.target.value)}
-                  className="w-full h-8 px-2.5 text-xs border border-[#D9ECD2] dark:border-slate-700 rounded bg-[#F5FAF7] dark:bg-slate-800 text-[#204D4C] dark:text-white font-mono focus:ring-1 focus:ring-[#51A090] focus:border-[#51A090] outline-none transition-colors"
+                  className="w-full h-8 px-2.5 text-xs border border-border dark:border-[#2D4A48] rounded bg-[#F5FAF7] dark:bg-slate-800 text-text-primary dark:text-foreground font-mono focus:ring-1 focus:ring-[#51A090] focus:border-[#51A090] outline-none transition-colors"
                 />
               </div>
 
@@ -317,7 +317,7 @@ export default function Home() {
                   type="date"
                   value={toDate}
                   onChange={(e) => setToDate(e.target.value)}
-                  className="w-full h-8 px-2.5 text-xs border border-[#D9ECD2] dark:border-slate-700 rounded bg-[#F5FAF7] dark:bg-slate-800 text-[#204D4C] dark:text-white focus:ring-1 focus:ring-[#51A090] focus:border-[#51A090] outline-none transition-colors"
+                  className="w-full h-8 px-2.5 text-xs border border-border dark:border-[#2D4A48] rounded bg-[#F5FAF7] dark:bg-slate-800 text-text-primary dark:text-foreground focus:ring-1 focus:ring-[#51A090] focus:border-[#51A090] outline-none transition-colors"
                 />
               </div>
 
@@ -330,7 +330,7 @@ export default function Home() {
                   type="time"
                   value={toTime}
                   onChange={(e) => setToTime(e.target.value)}
-                  className="w-full h-8 px-2.5 text-xs border border-[#D9ECD2] dark:border-slate-700 rounded bg-[#F5FAF7] dark:bg-slate-800 text-[#204D4C] dark:text-white font-mono focus:ring-1 focus:ring-[#51A090] focus:border-[#51A090] outline-none transition-colors"
+                  className="w-full h-8 px-2.5 text-xs border border-border dark:border-[#2D4A48] rounded bg-[#F5FAF7] dark:bg-slate-800 text-text-primary dark:text-foreground font-mono focus:ring-1 focus:ring-[#51A090] focus:border-[#51A090] outline-none transition-colors"
                 />
               </div>
 
@@ -357,14 +357,13 @@ export default function Home() {
           <div className="px-4 pb-3">
             <div
               ref={rulerRef}
-              className="relative h-7 rounded overflow-hidden cursor-default"
-              style={{ background: "linear-gradient(to bottom, #334155, #1e293b)" }}
+              className="relative h-7 rounded overflow-hidden cursor-default bg-gradient-to-b from-[#F5FAF7] to-[#E4F2E7] dark:from-[#1a2e2c] dark:to-[#0f1f1e]"
             >
               {/* Hour labels */}
               {Array.from({ length: 25 }, (_, i) => (
                 <span
                   key={i}
-                  className="absolute text-[8px] text-slate-400 dark:text-slate-500 pointer-events-none"
+                  className="absolute text-[9px] font-medium text-[#204D4C] dark:text-white/90 pointer-events-none"
                   style={{ left: `${(i / 24) * 100}%`, transform: 'translateX(-50%)', top: 2 }}
                 >
                   {String(i % 24).padStart(2, "0")}:00
@@ -510,7 +509,7 @@ export default function Home() {
           </div>
 
           {/* Quick range buttons */}
-          <div className="px-4 py-2 border-t border-slate-100 dark:border-slate-800 flex flex-wrap items-center gap-1.5">
+          <div className="px-4 py-2 border-t border-[#D9ECD2] dark:border-[#2D4A48] flex flex-wrap items-center gap-1.5">
             <span className="text-[11px] font-medium text-slate-400 dark:text-slate-500 mr-0.5">Quick:</span>
             <div className="flex flex-wrap gap-1">
             {([
@@ -678,7 +677,7 @@ export default function Home() {
 
                     {/* Matched dates */}
                     {totalCount > 0 && showExecutionDates && (
-                      <div className="mt-2.5 pt-2.5 border-t border-slate-100 dark:border-slate-800">
+                      <div className="mt-2.5 pt-2.5 border-t border-[#D9ECD2] dark:border-[#2D4A48]">
                         <p className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1.5">
                           Execution dates
                         </p>
