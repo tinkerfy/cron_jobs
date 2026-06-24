@@ -121,94 +121,120 @@ export default function Home() {
   const totalCount = results?.reduce((sum, r) => sum + r.totalCount, 0) ?? 0;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
       {/* Header */}
-      <header className="bg-white dark:bg-slate-800 shadow-sm border-b border-slate-200 dark:border-slate-700">
-        <div className="max-w-6xl mx-auto px-6 py-5">
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Cron Job Viewer</h1>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-            View which cron jobs fire within a selected date range
-          </p>
+      <header className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800">
+        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+          <div>
+            <h1 className="text-lg font-semibold text-slate-900 dark:text-white tracking-tight">Cron Job Viewer</h1>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+              View which cron jobs fire within a selected date range
+            </p>
+          </div>
+          <div className="flex items-center gap-3 text-xs text-slate-500 dark:text-slate-400">
+            <span className="flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-green-500"></span>
+              {jobs.length} jobs loaded
+            </span>
+          </div>
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-6 py-8">
+      <main className="max-w-7xl mx-auto px-6 py-6">
         {/* Filter Panel */}
-        <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg border border-slate-200 dark:border-slate-700 p-8 mb-10">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-            {/* From */}
-            <div>
-              <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">
-                From
-              </label>
-              <div className="flex gap-2">
+        <div className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 mb-6">
+          {/* Panel header */}
+          <div className="px-4 py-2.5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+            <span className="text-[11px] font-semibold text-slate-600 dark:text-slate-300 uppercase tracking-wider">Date Range</span>
+            <span className="text-[11px] text-slate-400 dark:text-slate-500">{matchingCount > 0 ? `${matchingCount} of ${jobs.length} jobs` : "No filter applied"}</span>
+          </div>
+
+          {/* Date/time inputs */}
+          <div className="px-4 py-3">
+            <div className="grid grid-cols-2 md:grid-cols-12 gap-x-3 gap-y-2 items-end">
+              {/* From date */}
+              <div className="col-span-1 md:col-span-3">
+                <label className="block text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">
+                  From
+                </label>
                 <input
                   type="date"
                   value={fromDate}
                   onChange={(e) => setFromDate(e.target.value)}
-                  className="flex-1 px-3 py-2.5 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none text-sm"
+                  className="w-full h-7 px-2 text-xs border border-slate-300 dark:border-slate-700 rounded bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors"
                 />
+              </div>
+
+              {/* From time */}
+              <div className="col-span-1 md:col-span-2">
+                <label className="block text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">
+                  Time
+                </label>
                 <input
                   type="time"
                   value={fromTime}
                   onChange={(e) => setFromTime(e.target.value)}
-                  className="w-35 px-3 py-2.5 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none text-sm font-mono"
+                  className="w-full h-7 px-2 text-xs border border-slate-300 dark:border-slate-700 rounded bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white font-mono focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors"
                 />
               </div>
-            </div>
 
-            {/* To */}
-            <div>
-              <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">
-                To
-              </label>
-              <div className="flex gap-2">
+              {/* To date */}
+              <div className="col-span-1 md:col-span-3">
+                <label className="block text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">
+                  To
+                </label>
                 <input
                   type="date"
                   value={toDate}
                   onChange={(e) => setToDate(e.target.value)}
-                  className="flex-1 px-3 py-2.5 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none text-sm"
+                  className="w-full h-7 px-2 text-xs border border-slate-300 dark:border-slate-700 rounded bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors"
                 />
+              </div>
+
+              {/* To time */}
+              <div className="col-span-1 md:col-span-2">
+                <label className="block text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">
+                  Time
+                </label>
                 <input
                   type="time"
                   value={toTime}
                   onChange={(e) => setToTime(e.target.value)}
-                  className="w-35 px-3 py-2.5 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none text-sm font-mono"
+                  className="w-full h-7 px-2 text-xs border border-slate-300 dark:border-slate-700 rounded bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white font-mono focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors"
                 />
               </div>
-            </div>
 
-            {/* Actions */}
-            <div className="flex items-end gap-2">
-              <button
-                onClick={() => {
-                  const from = buildDateTime(fromDate, fromTime);
-                  const to = buildDateTime(toDate, toTime);
-                  fetchResults(from, to);
-                }}
-                className="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors shadow-sm flex items-center justify-center"
-                title="Filter"
-              >
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
-              </button>
+              {/* Apply button */}
+              <div className="col-span-1 md:col-span-2">
+                <button
+                  onClick={() => {
+                    const from = buildDateTime(fromDate, fromTime);
+                    const to = buildDateTime(toDate, toTime);
+                    fetchResults(from, to);
+                  }}
+                  className="w-full h-7 px-3 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white text-xs font-medium rounded transition-colors flex items-center justify-center gap-1.5"
+                >
+                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                  Filter
+                </button>
+              </div>
             </div>
           </div>
 
           {/* Time Range Ruler */}
-          <div className="mt-4">
-            <div className="text-xs text-slate-400 dark:text-slate-500 mb-1">Time Range</div>
+          <div className="px-4 pb-3">
             <div
               ref={rulerRef}
-              className="relative h-8 rounded-lg overflow-hidden"
+              className="relative h-5 rounded overflow-hidden cursor-default"
               style={{ background: "linear-gradient(to bottom, #334155, #1e293b)" }}
             >
               {/* Hour labels */}
               {Array.from({ length: 25 }, (_, i) => (
                 <span
                   key={i}
-                  className="absolute text-[9px] text-slate-400 dark:text-slate-500 pointer-events-none"
+                  className="absolute text-[7px] text-slate-400 dark:text-slate-500 pointer-events-none"
                   style={{ left: `${(i / 24) * 100}%`, transform: 'translateX(-50%)', top: 0 }}
                 >
                   {String(i % 24).padStart(2, "0")}:00
@@ -219,8 +245,8 @@ export default function Home() {
               {Array.from({ length: 25 }, (_, i) => (
                 <div
                   key={i}
-                  className="absolute pointer-events-none h-3 bg-slate-600/60"
-                  style={{ left: `${(i / 24) * 100}%`, width: 1, top: 12 }}
+                  className="absolute pointer-events-none h-1.5 bg-slate-600/60"
+                  style={{ left: `${(i / 24) * 100}%`, width: 1, top: 8 }}
                 />
               ))}
               
@@ -262,42 +288,42 @@ export default function Home() {
               
               {/* Handle tracks */}
               <div
-                className="absolute h-5 pointer-events-none"
-                style={{ left: `${fromMinutes / 1440 * 100}%`, width: 20, top: 12, transform: 'translateX(-50%)' }}
+                className="absolute h-3 pointer-events-none"
+                style={{ left: `${fromMinutes / 1440 * 100}%`, width: 12, top: 8, transform: 'translateX(-50%)' }}
               />
               <div
-                className="absolute h-5 pointer-events-none"
-                style={{ left: `${toMinutes / 1440 * 100}%`, width: 20, top: 12, transform: 'translateX(-50%)' }}
+                className="absolute h-3 pointer-events-none"
+                style={{ left: `${toMinutes / 1440 * 100}%`, width: 12, top: 8, transform: 'translateX(-50%)' }}
               />
               
               {/* Handles */}
               <div
-                className="absolute w-4 h-6 cursor-ew-resize rounded-sm"
+                className="absolute w-2.5 h-4 cursor-ew-resize rounded-sm"
                 style={{
                   left: `${fromMinutes / 1440 * 100}%`,
-                  top: 12,
+                  top: 8,
                   transform: 'translateX(-50%)',
                   background: 'rgba(59, 130, 246, 0.15)',
                 }}
                 onMouseDown={(e) => handleRulerMouseDown(e, 'from')}
               >
                 <div
-                  className="absolute w-1 h-5 bg-blue-400 rounded-full"
+                  className="absolute w-1 h-3 bg-blue-400 rounded-full"
                   style={{ left: '50%', top: 0, transform: 'translateX(-50%)' }}
                 />
               </div>
               <div
-                className="absolute w-4 h-6 cursor-ew-resize rounded-sm"
+                className="absolute w-2.5 h-4 cursor-ew-resize rounded-sm"
                 style={{
                   left: `${toMinutes / 1440 * 100}%`,
-                  top: 12,
+                  top: 8,
                   transform: 'translateX(-50%)',
                   background: 'rgba(59, 130, 246, 0.15)',
                 }}
                 onMouseDown={(e) => handleRulerMouseDown(e, 'to')}
               >
                 <div
-                  className="absolute w-1 h-5 bg-blue-400 rounded-full"
+                  className="absolute w-1 h-3 bg-blue-400 rounded-full"
                   style={{ left: '50%', top: 0, transform: 'translateX(-50%)' }}
                 />
               </div>
@@ -308,9 +334,9 @@ export default function Home() {
           </div>
 
           {/* Quick range buttons */}
-          <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-slate-100 dark:border-slate-700">
-            <span className="text-xs text-slate-400 dark:text-slate-500 self-center mr-2">Quick:</span>
-            <div className="flex flex-wrap gap-2">
+          <div className="px-4 py-2 border-t border-slate-100 dark:border-slate-800 flex flex-wrap items-center gap-1.5">
+            <span className="text-[10px] font-medium text-slate-400 dark:text-slate-500 mr-0.5">Quick:</span>
+            <div className="flex flex-wrap gap-1">
             {([
               [0, "Today"],
               [1, "1 Day"],
@@ -332,7 +358,7 @@ export default function Home() {
                     setToTime("23:59");
                     fetchResults(quickFrom, quickTo);
                   }}
-                  className="text-[10px] px-2 py-0.5 rounded-full bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-600 dark:text-slate-300 transition-colors"
+                  className="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 transition-colors"
                 >
                   {label}
                 </button>
@@ -361,7 +387,7 @@ export default function Home() {
                     setToTime(`${pad(quickTo.getHours())}:${pad(quickTo.getMinutes())}`);
                     fetchResults(quickFrom, quickTo);
                   }}
-                  className="text-[10px] px-2 py-0.5 rounded-full bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-600 dark:text-slate-300 transition-colors"
+                  className="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 transition-colors"
                 >
                   {label}
                 </button>
@@ -370,10 +396,10 @@ export default function Home() {
             </div>
             <button
               onClick={() => setShowExecutionDates(!showExecutionDates)}
-              className={`ml-auto text-xs px-3 py-1 rounded-full transition-colors ${
+              className={`ml-auto text-[10px] px-2 py-0.5 rounded transition-colors border ${
                 showExecutionDates
-                  ? "bg-blue-100 hover:bg-blue-200 dark:bg-blue-900/40 dark:hover:bg-blue-800/40 text-blue-700 dark:text-blue-300"
-                  : "bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-600 dark:text-slate-300"
+                  ? "bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/30 dark:hover:bg-blue-900/40 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800"
+                  : "bg-white hover:bg-slate-50 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700"
               }`}
             >
               {showExecutionDates ? "Hide Dates" : "Show Dates"}
@@ -383,27 +409,27 @@ export default function Home() {
 
         {/* Results */}
         {results === null ? (
-          <div className="text-center py-20">
-            <div className="text-5xl mb-4">⏰</div>
-            <h2 className="text-xl font-semibold text-slate-700 dark:text-slate-300 mb-2">
-              Select a date range to filter jobs
+          <div className="text-center py-16">
+            <div className="text-4xl mb-3 opacity-30">⏰</div>
+            <h2 className="text-base font-semibold text-slate-500 dark:text-slate-400 mb-1">
+              Select a date range
             </h2>
-            <p className="text-slate-400 dark:text-slate-500">
-              Choose your dates above and click Filter to see which jobs will run
+            <p className="text-xs text-slate-400 dark:text-slate-500">
+              Choose your dates above and click Filter
             </p>
           </div>
         ) : (
           <>
             {/* Summary */}
-            <div className="flex items-center justify-between mb-4">
-              <p className="text-sm text-slate-500 dark:text-slate-400">
+            <div className="flex items-center justify-between mb-3 px-1">
+              <p className="text-xs text-slate-500 dark:text-slate-400">
                 {matchingCount > 0 ? (
                   <>
                     <span className="font-semibold text-slate-700 dark:text-slate-200">{matchingCount}</span> of{" "}
                     <span className="font-semibold text-slate-700 dark:text-slate-200">{jobs.length}</span> jobs matched
                     {matchingCount > 0 && (
-                      <span className="ml-2">
-                        · <span className="font-semibold text-slate-700 dark:text-slate-200">{totalCount}</span> total executions
+                      <span className="ml-1.5">
+                        · <span className="font-semibold text-slate-700 dark:text-slate-200">{totalCount}</span> executions
                       </span>
                     )}
                   </>
@@ -414,61 +440,61 @@ export default function Home() {
             </div>
 
             {/* Job cards */}
-            <div className="space-y-3">
+            <div className="space-y-1.5">
               {results.map(({ job, matchedDates, totalCount }) => (
                 <div
                   key={job.name}
-                  className={`rounded-xl border shadow-sm transition-all ${
+                  className={`rounded-lg border transition-all ${
                     job.status === "false"
-                      ? "bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 opacity-50"
+                      ? "bg-slate-50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-800 opacity-50"
                       : totalCount > 0
-                        ? "bg-white dark:bg-slate-800 border-blue-200 dark:border-blue-800"
-                        : "bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 opacity-60"
+                        ? "bg-white dark:bg-slate-900 border-blue-200 dark:border-blue-900"
+                        : "bg-slate-50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-800 opacity-60"
                   }`}
                 >
-                  <div className="p-5">
-                    <div className="flex items-start gap-3">
-                      <div className={`mt-0.5 w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 ${
+                  <div className="px-4 py-3">
+                    <div className="flex items-start gap-2.5">
+                      <div className={`mt-0.5 w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 ${
                         job.status === "true"
-                          ? "bg-green-100 dark:bg-green-900/40 text-green-600 dark:text-green-400"
-                          : "bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-400"
+                          ? "bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400"
+                          : "bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400"
                       }`}>
                         {job.status === "true" ? (
-                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                          <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
                             <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                           </svg>
                         ) : (
-                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                          <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
                             <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                           </svg>
                         )}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-3 flex-wrap">
-                          <h3 className="font-semibold text-slate-900 dark:text-white">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-sm font-semibold text-slate-900 dark:text-white">
                             {job.compositeServiceName || 'NULL'}
-                          </h3>
-                          <code className="text-sm bg-slate-100 dark:bg-slate-700 px-2 py-0.5 rounded text-slate-700 dark:text-slate-300 font-mono">
+                          </span>
+                          <code className="text-[11px] bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded text-slate-600 dark:text-slate-300 font-mono">
                             {job.schedule}
                           </code>
                           {job.server && (
-                            <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
-                              job.server === "Prod1" ? "bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300"
-                              : job.server === "Prod2" ? "bg-orange-100 dark:bg-orange-900/40 text-orange-700 dark:text-orange-300"
-                              : "bg-teal-100 dark:bg-teal-900/40 text-teal-700 dark:text-teal-300"
+                            <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${
+                              job.server === "Prod1" ? "bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-300"
+                              : job.server === "Prod2" ? "bg-orange-50 dark:bg-orange-900/30 text-orange-600 dark:text-orange-300"
+                              : "bg-teal-50 dark:bg-teal-900/30 text-teal-600 dark:text-teal-300"
                             }`}>
                               {job.server}
                             </span>
                           )}
-                          <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
+                          <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${
                             totalCount > 0
-                              ? "bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300"
-                              : "bg-slate-100 dark:bg-slate-700 text-slate-400"
+                              ? "bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-300"
+                              : "bg-slate-100 dark:bg-slate-800 text-slate-400"
                           }`}>
                             {totalCount > 0 ? `${totalCount}x` : "No match"}
                           </span>
                         </div>
-                        <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 line-clamp-1">
                           {job.description}
                         </p>
                       </div>
@@ -476,8 +502,8 @@ export default function Home() {
 
                     {/* Matched dates */}
                     {totalCount > 0 && showExecutionDates && (
-                      <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-700">
-                        <p className="text-xs font-medium text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2">
+                      <div className="mt-2.5 pt-2.5 border-t border-slate-100 dark:border-slate-800">
+                        <p className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1.5">
                           Execution dates
                         </p>
                         {totalCount <= 500 ? (
@@ -485,7 +511,7 @@ export default function Home() {
                             {matchedDates.map((date, i) => (
                               <span
                                 key={`${job.name}-${i}`}
-                                className="inline-flex items-center text-[10px] px-1 py-0.5 bg-slate-50 dark:bg-slate-700/50 text-slate-500 dark:text-slate-400 rounded"
+                                className="inline-flex items-center text-[9px] px-1 py-0.5 bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 rounded"
                               >
                                 {formatDate(date)} {formatTime(date)}
                               </span>
@@ -493,17 +519,17 @@ export default function Home() {
                           </div>
                         ) : (
                           <div>
-                            <div className="flex flex-wrap gap-1.5 mb-2">
+                            <div className="flex flex-wrap gap-1 mb-1.5">
                               {matchedDates.slice(0, 50).map((date, i) => (
                                 <span
                                   key={i}
-                                  className="inline-flex items-center text-[10px] px-1 py-0.5 bg-slate-50 dark:bg-slate-700/50 text-slate-500 dark:text-slate-400 rounded"
+                                  className="inline-flex items-center text-[9px] px-1 py-0.5 bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 rounded"
                                 >
                                   {formatDate(date)} {formatTime(date)}
                                 </span>
                               ))}
                             </div>
-                            <p className="text-xs text-slate-400 dark:text-slate-500">
+                            <p className="text-[10px] text-slate-400 dark:text-slate-500">
                               + {totalCount - 50} more executions
                             </p>
                           </div>

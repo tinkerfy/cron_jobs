@@ -51,3 +51,39 @@ This covers:
 - Any new filtering feature or requirement
 
 The agent runs 108 tests in `src/app/lib/cron.test.ts`. All tests must pass.
+
+## UI/UX changes require review
+
+Any change to the user interface **must** be reviewed by the `ui-ux-reviewer` agent before being considered complete:
+
+```
+ui-ux-reviewer
+```
+
+This covers:
+- Changes to `page.tsx` (filter panel, job cards, layout, spacing, typography, colors)
+- Changes to `layout.tsx` or `globals.css` (global styles, fonts, theme)
+- New UI components or visual elements
+- Changes to component sizing, spacing, borders, shadows, or rounded corners
+- Any visual or UX improvement or redesign
+
+The agent evaluates against enterprise design standards (SAP Fiori, Material Design 3, Fluent UI) and reports issues by priority with actionable fixes and sample code.
+
+## Code quality changes require review
+
+Any code change **must** be reviewed by the `nextjs-code-quality` agent before being considered complete:
+
+```
+nextjs-code-quality
+```
+
+This covers:
+- All TypeScript changes
+- React component changes (hooks, state, rendering)
+- Next.js App Router patterns (layouts, pages, route handlers)
+- Data fetching and caching
+- Security, accessibility, and performance
+- ESLint compliance
+- Any production-impacting change
+
+The agent scores changes 1-10 and provides specific code fixes for critical and high priority issues.
