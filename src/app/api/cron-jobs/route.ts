@@ -52,17 +52,17 @@ export async function GET(request: NextRequest) {
     const whereClause = whereClauses.length > 0 ? `WHERE ${whereClauses.join(" AND ")}` : "";
 
     const [result] = await pool.query(
-      `SELECT name, minutes, hours, days, months, weeks, server, compositeservicename, status, description
+      `SELECT name, minutes, hours, days, months, weeks, years, server, compositeservicename, status, description
         FROM cron_jobs
         ${whereClause}
         ORDER BY name`,
       params
-    ) as unknown as [{ name: string; minutes: string; hours: string; days: string; months: string; weeks: string; server: string | null; compositeservicename: string | null; status: string; description: string }[]];
+    ) as unknown as [{ name: string; minutes: string; hours: string; days: string; months: string; weeks: string; years: string; server: string | null; compositeservicename: string | null; status: string; description: string }[]];
 
     const jobs: CronJob[] = result.map((row) => ({
       name: row.name,
-      schedule: `${row.minutes} ${row.hours} ${row.days} ${row.months} ${row.weeks}`,
-      description: generateScheduleDescription(`${row.minutes} ${row.hours} ${row.days} ${row.months} ${row.weeks}`),
+      schedule: `${row.minutes} ${row.hours} ${row.days} ${row.months} ${row.weeks} ${row.years || '*'}`,
+      description: generateScheduleDescription(`${row.minutes} ${row.hours} ${row.days} ${row.months} ${row.weeks} ${row.years || '*'}`),
       server: row.server,
       compositeServiceName: row.compositeservicename,
       status: row.status,

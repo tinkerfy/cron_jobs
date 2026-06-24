@@ -41,12 +41,13 @@ export function cronMatches(date: Date, expression: string): boolean {
   const parts = expression.trim().split(/\s+/);
   if (parts.length < 5) return false;
 
-  const [minute, hour, dayOfMonth, month, dayOfWeek] = parts;
+  const [minute, hour, dayOfMonth, month, dayOfWeek, yearField] = parts;
 
   const minutes = parseField(minute, 0, 59);
   const hours = parseField(hour, 0, 23);
   const daysOfMonth = parseField(dayOfMonth, 1, 31);
   const months = parseField(month, 1, 12);
+  const years = parseField(yearField || "*", 1970, 2099);
   // Cron: 0 and 7 = Sunday; JS getDay(): 0 = Sunday
   const daysOfWeekSet = new Set(
     [...parseField(dayOfWeek, 0, 7)].map((d) => (d === 7 ? 0 : d))
@@ -57,6 +58,7 @@ export function cronMatches(date: Date, expression: string): boolean {
   const dateDayOfMonth = date.getDate();
   const dateMonth = date.getMonth() + 1;
   const dateDayOfWeek = date.getDay();
+  const dateYear = date.getFullYear();
 
   // Traditional cron: if both day-of-month and day-of-week are constrained, use OR
   const dayOfMonthConstrained = dayOfMonth !== "*";
@@ -70,6 +72,7 @@ export function cronMatches(date: Date, expression: string): boolean {
     minutes.has(dateMin) &&
     hours.has(dateHour) &&
     months.has(dateMonth) &&
+    years.has(dateYear) &&
     dayMatch
   );
 }
@@ -195,7 +198,7 @@ export function generateScheduleDescription(schedule: string): string {
   const parts = schedule.trim().split(/\s+/);
   if (parts.length < 5) return schedule;
 
-  const [minute, hour, dayOfMonth, month, dayOfWeek] = parts;
+  const [minute, hour, dayOfMonth, month, dayOfWeek, yearField] = parts;
 
   // Check for step pattern on minute
   const minuteStep = minute.startsWith("*/") ? parseInt(minute.split("/")[1]) : null;
@@ -226,6 +229,11 @@ export function generateScheduleDescription(schedule: string): string {
   const monthValues = isMonth && month.includes(",") ? month.split(",").map(Number) : null;
   const monthRange = isMonth && month.includes("-") ? month.split("-").map(Number) : null;
 
+  // Check for year constraint
+  const isYear = yearField && yearField !== "*";
+  const yearValues = isYear && yearField.includes(",") ? yearField.split(",").map(Number) : null;
+  const yearRange = isYear && yearField.includes("-") ? yearField.split("-").map(Number) : null;
+
   // === Build description ===
 
   // Case 1: Every N minutes (with possible hour/day/month constraints)
@@ -246,36 +254,89 @@ export function generateScheduleDescription(schedule: string): string {
       else if (monthValues && monthValues.length <= 4) desc += `, ${monthValues.map((m) => MONTH_NAMES[m - 1]).join(", ")}`;
       else desc += `, ${MONTH_NAMES[parseInt(month) - 1]}`;
     }
+    if (isYear) {
+      if (yearRange) desc += `, ${yearRange[0]}–${yearRange[1]}`;
+      else if (yearValues && yearValues.length <= 4) desc += `, ${yearValues.join(", ")}`;
+      else desc += `, ${yearField}`;
+    }
     return desc;
   }
 
   // Case 2: Single minute + single hour + no day/month constraints = "Daily at H:MM"
   if (singleHour !== null && !isDayOfMonth && !isMonth && dayOfWeek === "*") {
-    return `Daily at ${formatHour(singleHour)}`;
+    let desc = `Daily at ${formatHour(singleHour)}`;
+    if (isYear) {
+      if (yearRange) desc += `, ${yearRange[0]}–${yearRange[1]}`;
+      else if (yearValues && yearValues.length <= 4) desc += `, ${yearValues.join(", ")}`;
+      else desc += `, ${yearField}`;
+    }
+    return desc;
   }
 
   // Case 3: Single minute + multiple hours = "Daily at H1:00, H2:00, ..."
   if (singleHour !== null && hourValues && hourValues.length > 1 && !isDayOfMonth && !isMonth && dayOfWeek === "*") {
-    return `Daily at ${hourValues.map(formatHour).join(", ")}`;
+    let desc = `Daily at ${hourValues.map(formatHour).join(", ")}`;
+    if (isYear) {
+      if (yearRange) desc += `, ${yearRange[0]}–${yearRange[1]}`;
+      else if (yearValues && yearValues.length <= 4) desc += `, ${yearValues.join(", ")}`;
+      else desc += `, ${yearField}`;
+    }
+    return desc;
   }
 
   // Case 4: Single minute + single hour + day of week = "Weekdays at H:00" etc.
   if (singleHour !== null && !isDayOfMonth && !isMonth) {
-    if (isWeekdays) return `Weekdays at ${formatHour(singleHour)}`;
-    if (isWeekends) return `Weekends at ${formatHour(singleHour)}`;
-    if (dowValues) return `${dowValues.map((d) => DAY_NAMES[d]).join(", ")} at ${formatHour(singleHour)}`;
+    if (isWeekdays) {
+      let desc = `Weekdays at ${formatHour(singleHour)}`;
+      if (isYear) {
+        if (yearRange) desc += `, ${yearRange[0]}–${yearRange[1]}`;
+        else if (yearValues && yearValues.length <= 4) desc += `, ${yearValues.join(", ")}`;
+        else desc += `, ${yearField}`;
+      }
+      return desc;
+    }
+    if (isWeekends) {
+      let desc = `Weekends at ${formatHour(singleHour)}`;
+      if (isYear) {
+        if (yearRange) desc += `, ${yearRange[0]}–${yearRange[1]}`;
+        else if (yearValues && yearValues.length <= 4) desc += `, ${yearValues.join(", ")}`;
+        else desc += `, ${yearField}`;
+      }
+      return desc;
+    }
+    if (dowValues) {
+      let desc = `${dowValues.map((d) => DAY_NAMES[d]).join(", ")} at ${formatHour(singleHour)}`;
+      if (isYear) {
+        if (yearRange) desc += `, ${yearRange[0]}–${yearRange[1]}`;
+        else if (yearValues && yearValues.length <= 4) desc += `, ${yearValues.join(", ")}`;
+        else desc += `, ${yearField}`;
+      }
+      return desc;
+    }
   }
 
   // Case 5: Single minute + single hour + day of month = "Monthly on D at H:00"
   if (singleHour !== null && isDayOfMonth && !isMonth && dayOfWeek === "*") {
+    let desc;
     if (dayOfMonthValues && dayOfMonthValues.length <= 4) {
-      return `Monthly on days ${dayOfMonthValues.join(", ")} at ${formatHour(singleHour)}`;
+      desc = `Monthly on days ${dayOfMonthValues.join(", ")} at ${formatHour(singleHour)}`;
+    } else {
+      desc = `Monthly on day ${dayOfMonth} at ${formatHour(singleHour)}`;
     }
-    return `Monthly on day ${dayOfMonth} at ${formatHour(singleHour)}`;
+    if (isYear) {
+      if (yearRange) desc += `, ${yearRange[0]}–${yearRange[1]}`;
+      else if (yearValues && yearValues.length <= 4) desc += `, ${yearValues.join(", ")}`;
+      else desc += `, ${yearField}`;
+    }
+    return desc;
   }
 
   // Case 6: Single minute + single hour + month = "Yearly on M on D at H:00"
   if (singleHour !== null && isMonth && dayOfWeek === "*") {
+    let desc = `Yearly`;
+    if (monthRange) desc += `, ${MONTH_NAMES[monthRange[0] - 1]}–${MONTH_NAMES[monthRange[1] - 1]}`;
+    else if (monthValues && monthValues.length <= 4) desc += `, ${monthValues.map((m) => MONTH_NAMES[m - 1]).join(", ")}`;
+    else desc += `, ${MONTH_NAMES[parseInt(month) - 1]}`;
     let timePart = `at ${formatHour(singleHour)}`;
     if (isDayOfMonth) {
       if (dayOfMonthValues && dayOfMonthValues.length <= 4) {
@@ -284,14 +345,19 @@ export function generateScheduleDescription(schedule: string): string {
         timePart = `on day ${dayOfMonth} ${timePart}`;
       }
     }
-    if (monthRange) return `Yearly, ${MONTH_NAMES[monthRange[0] - 1]}–${MONTH_NAMES[monthRange[1] - 1]} ${timePart}`;
-    if (monthValues && monthValues.length <= 4) return `Yearly, ${monthValues.map((m) => MONTH_NAMES[m - 1]).join(", ")} ${timePart}`;
-    return `Yearly in ${MONTH_NAMES[parseInt(month) - 1]} ${timePart}`;
+    if (isYear) {
+      if (yearRange) desc += `, ${yearRange[0]}–${yearRange[1]} ${timePart}`;
+      else if (yearValues && yearValues.length <= 4) desc += `, ${yearValues.join(", ")} ${timePart}`;
+      else desc += `, ${yearField} ${timePart}`;
+    } else {
+      desc += ` ${timePart}`;
+    }
+    return desc;
   }
 
   // Case 7: Single minute + single hour + day of month + day of week
   if (singleHour !== null && isDayOfMonth && dayOfWeek !== "*") {
-    let desc: string;
+    let desc;
     if (dayOfMonthValues && dayOfMonthValues.length <= 4) {
       desc = `Monthly on days ${dayOfMonthValues.join(", ")} at ${formatHour(singleHour)}`;
     } else {
@@ -300,6 +366,11 @@ export function generateScheduleDescription(schedule: string): string {
     if (isWeekdays) desc += ", weekdays";
     else if (isWeekends) desc += ", weekends";
     else if (dowValues) desc += `, ${dowValues.map((d) => DAY_NAMES[d]).join(", ")}`;
+    if (isYear) {
+      if (yearRange) desc += `, ${yearRange[0]}–${yearRange[1]}`;
+      else if (yearValues && yearValues.length <= 4) desc += `, ${yearValues.join(", ")}`;
+      else desc += `, ${yearField}`;
+    }
     return desc;
   }
 
@@ -320,6 +391,11 @@ export function generateScheduleDescription(schedule: string): string {
       else if (monthValues && monthValues.length <= 4) desc += `, ${monthValues.map((m) => MONTH_NAMES[m - 1]).join(", ")}`;
       else desc += `, ${MONTH_NAMES[parseInt(month) - 1]}`;
     }
+    if (isYear) {
+      if (yearRange) desc += `, ${yearRange[0]}–${yearRange[1]}`;
+      else if (yearValues && yearValues.length <= 4) desc += `, ${yearValues.join(", ")}`;
+      else desc += `, ${yearField}`;
+    }
     return desc;
   }
 
@@ -338,6 +414,11 @@ export function generateScheduleDescription(schedule: string): string {
       else if (monthValues && monthValues.length <= 4) desc += `, ${monthValues.map((m) => MONTH_NAMES[m - 1]).join(", ")}`;
       else desc += `, ${MONTH_NAMES[parseInt(month) - 1]}`;
     }
+    if (isYear) {
+      if (yearRange) desc += `, ${yearRange[0]}–${yearRange[1]}`;
+      else if (yearValues && yearValues.length <= 4) desc += `, ${yearValues.join(", ")}`;
+      else desc += `, ${yearField}`;
+    }
     return desc;
   }
 
@@ -354,20 +435,67 @@ export function generateScheduleDescription(schedule: string): string {
         else if (monthValues && monthValues.length <= 4) desc += `, ${monthValues.map((m) => MONTH_NAMES[m - 1]).join(", ")}`;
         else desc += `, ${MONTH_NAMES[parseInt(month) - 1]}`;
       }
+      if (isYear) {
+        if (yearRange) desc += `, ${yearRange[0]}–${yearRange[1]}`;
+        else if (yearValues && yearValues.length <= 4) desc += `, ${yearValues.join(", ")}`;
+        else desc += `, ${yearField}`;
+      }
       return desc;
     }
     if (dayOfWeek !== "*" && !isWeekdays && !isWeekends && dowValues) {
-      return `${dowValues.map((d) => DAY_NAMES[d]).join(", ")} every hour`;
+      let desc = `${dowValues.map((d) => DAY_NAMES[d]).join(", ")} every hour`;
+      if (isYear) {
+        if (yearRange) desc += `, ${yearRange[0]}–${yearRange[1]}`;
+        else if (yearValues && yearValues.length <= 4) desc += `, ${yearValues.join(", ")}`;
+        else desc += `, ${yearField}`;
+      }
+      return desc;
     }
-    return "Every hour";
+    let desc = "Every hour";
+    if (isYear) {
+      if (yearRange) desc += `, ${yearRange[0]}–${yearRange[1]}`;
+      else if (yearValues && yearValues.length <= 4) desc += `, ${yearValues.join(", ")}`;
+      else desc += `, ${yearField}`;
+    }
+    return desc;
   }
 
   // Case 11: Every minute (minute = *) with hour range 0-23 = every minute
   if (minute === "*" && (hour === "*" || hour === "0-23")) {
-    if (isWeekdays) return "Every minute, weekdays";
-    if (isWeekends) return "Every minute, weekends";
-    if (dowValues && dowValues.length > 0) return `${dowValues.map((d) => DAY_NAMES[d]).join(", ")} every minute`;
-    return "Every minute";
+    if (isWeekdays) {
+      let desc = "Every minute, weekdays";
+      if (isYear) {
+        if (yearRange) desc += `, ${yearRange[0]}–${yearRange[1]}`;
+        else if (yearValues && yearValues.length <= 4) desc += `, ${yearValues.join(", ")}`;
+        else desc += `, ${yearField}`;
+      }
+      return desc;
+    }
+    if (isWeekends) {
+      let desc = "Every minute, weekends";
+      if (isYear) {
+        if (yearRange) desc += `, ${yearRange[0]}–${yearRange[1]}`;
+        else if (yearValues && yearValues.length <= 4) desc += `, ${yearValues.join(", ")}`;
+        else desc += `, ${yearField}`;
+      }
+      return desc;
+    }
+    if (dowValues && dowValues.length > 0) {
+      let desc = `${dowValues.map((d) => DAY_NAMES[d]).join(", ")} every minute`;
+      if (isYear) {
+        if (yearRange) desc += `, ${yearRange[0]}–${yearRange[1]}`;
+        else if (yearValues && yearValues.length <= 4) desc += `, ${yearValues.join(", ")}`;
+        else desc += `, ${yearField}`;
+      }
+      return desc;
+    }
+    let desc = "Every minute";
+    if (isYear) {
+      if (yearRange) desc += `, ${yearRange[0]}–${yearRange[1]}`;
+      else if (yearValues && yearValues.length <= 4) desc += `, ${yearValues.join(", ")}`;
+      else desc += `, ${yearField}`;
+    }
+    return desc;
   }
 
   // Case 12: Every minute at specific hours
@@ -382,6 +510,11 @@ export function generateScheduleDescription(schedule: string): string {
       else if (monthValues && monthValues.length <= 4) desc += `, ${monthValues.map((m) => MONTH_NAMES[m - 1]).join(", ")}`;
       else desc += `, ${MONTH_NAMES[parseInt(month) - 1]}`;
     }
+    if (isYear) {
+      if (yearRange) desc += `, ${yearRange[0]}–${yearRange[1]}`;
+      else if (yearValues && yearValues.length <= 4) desc += `, ${yearValues.join(", ")}`;
+      else desc += `, ${yearField}`;
+    }
     return desc;
   }
 
@@ -395,6 +528,11 @@ export function generateScheduleDescription(schedule: string): string {
       if (monthRange) desc += `, ${MONTH_NAMES[monthRange[0] - 1]}–${MONTH_NAMES[monthRange[1] - 1]}`;
       else if (monthValues && monthValues.length <= 4) desc += `, ${monthValues.map((m) => MONTH_NAMES[m - 1]).join(", ")}`;
       else desc += `, ${MONTH_NAMES[parseInt(month) - 1]}`;
+    }
+    if (isYear) {
+      if (yearRange) desc += `, ${yearRange[0]}–${yearRange[1]}`;
+      else if (yearValues && yearValues.length <= 4) desc += `, ${yearValues.join(", ")}`;
+      else desc += `, ${yearField}`;
     }
     return desc;
   }
@@ -411,6 +549,11 @@ export function generateScheduleDescription(schedule: string): string {
       else if (monthValues && monthValues.length <= 4) desc += `, ${monthValues.map((m) => MONTH_NAMES[m - 1]).join(", ")}`;
       else desc += `, ${MONTH_NAMES[parseInt(month) - 1]}`;
     }
+    if (isYear) {
+      if (yearRange) desc += `, ${yearRange[0]}–${yearRange[1]}`;
+      else if (yearValues && yearValues.length <= 4) desc += `, ${yearValues.join(", ")}`;
+      else desc += `, ${yearField}`;
+    }
     return desc;
   }
 
@@ -425,6 +568,11 @@ export function generateScheduleDescription(schedule: string): string {
       if (monthRange) desc += `, ${MONTH_NAMES[monthRange[0] - 1]}–${MONTH_NAMES[monthRange[1] - 1]}`;
       else if (monthValues && monthValues.length <= 4) desc += `, ${monthValues.map((m) => MONTH_NAMES[m - 1]).join(", ")}`;
       else desc += `, ${MONTH_NAMES[parseInt(month) - 1]}`;
+    }
+    if (isYear) {
+      if (yearRange) desc += `, ${yearRange[0]}–${yearRange[1]}`;
+      else if (yearValues && yearValues.length <= 4) desc += `, ${yearValues.join(", ")}`;
+      else desc += `, ${yearField}`;
     }
     return desc;
   }
