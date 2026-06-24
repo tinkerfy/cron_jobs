@@ -18,6 +18,7 @@ export async function GET(request: NextRequest) {
     const toDate = searchParams.get("to");
     const compositeServiceName = searchParams.get("compositeServiceName");
     const server = searchParams.get("server");
+    const status = searchParams.get("status");
 
     const whereClauses: string[] = [];
     const params: (string | number)[] = [];
@@ -27,10 +28,27 @@ export async function GET(request: NextRequest) {
       params.push(`${compositeServiceName}%`);
     }
     if (server) {
-      whereClauses.push("server = ?");
-      params.push(server);
+      const servers = server.split(",").map(s => s.trim()).filter(Boolean);
+      if (servers.length === 1) {
+        whereClauses.push("server = ?");
+        params.push(servers[0]);
+      } else if (servers.length > 1) {
+        const placeholders = servers.map(() => "?").join(", ");
+        whereClauses.push(`server IN (${placeholders})`);
+        params.push(...servers);
+      }
     }
-
+    if (status) {
+      const statuses = status.split(",").map(s => s.trim()).filter(Boolean);
+      if (statuses.length === 1) {
+        whereClauses.push("status = ?");
+        params.push(statuses[0]);
+      } else if (statuses.length > 1) {
+        const placeholders = statuses.map(() => "?").join(", ");
+        whereClauses.push(`status IN (${placeholders})`);
+        params.push(...statuses);
+      }
+    }
     const whereClause = whereClauses.length > 0 ? `WHERE ${whereClauses.join(" AND ")}` : "";
 
     const [result] = await pool.query(
@@ -50,9 +68,11 @@ export async function GET(request: NextRequest) {
       status: row.status,
     }));
 
+    const servers = Array.from(new Set(result.map(r => r.server).filter(Boolean))) as string[];
+
     // If no date range provided, return raw jobs
     if (!fromDate || !toDate) {
-      return NextResponse.json(jobs);
+      return NextResponse.json({ jobs, servers });
     }
 
     const from = new Date(fromDate);
