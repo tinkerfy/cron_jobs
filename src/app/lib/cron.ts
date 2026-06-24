@@ -14,7 +14,7 @@ export interface MatchedJob {
 }
 
 // Parse a single cron field into a set of valid values
-function parseField(field: string, min: number, max: number): Set<number> {
+export function parseField(field: string, min: number, max: number): Set<number> {
   const values = new Set<number>();
   for (const part of field.split(",")) {
     if (part === "*") {

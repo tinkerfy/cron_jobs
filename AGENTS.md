@@ -34,3 +34,20 @@ src/app/
 - **`cronMatches()` in `lib/cron.ts:37`** uses traditional cron semantics: when both day-of-month and day-of-week are constrained, it uses OR logic.
 - **Composite keys** for matched date items: `key={`${job.name}-${i}`}` to avoid duplicate key warnings.
 - **`cron-parser` in `package.json`** — leave it for now; the custom evaluator works correctly for local time.
+
+## Filtering changes require validation
+
+Any change to filtering logic **must** be validated by the `filtering-validator` agent before being considered complete:
+
+```
+filtering-validator
+```
+
+This covers:
+- New filter parameters in the API (`route.ts`)
+- New filter UI components (`page.tsx`)
+- Changes to `cronMatches()`, `parseField()`, `expandCron()`, `matchJobs()`
+- Changes to `generateScheduleDescription()`
+- Any new filtering feature or requirement
+
+The agent runs 108 tests in `src/app/lib/cron.test.ts`. All tests must pass.
