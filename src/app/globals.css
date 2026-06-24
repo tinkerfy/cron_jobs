@@ -11,8 +11,8 @@
   --selected: #E4F2E7;
   --info: #AEE0E8;
   --text-primary: #204D4C;
-  --text-secondary: #4A7A78;
-  --text-muted: #8BAFAD;
+  --text-secondary: #3D6E6B;
+  --text-muted: #5D8A88;
   --surface: #FFFFFF;
   --surface-hover: #F0F7F2;
   --ring: #51A090;
@@ -26,6 +26,12 @@
   --color-border: var(--border);
   --color-selected: var(--selected);
   --color-info: var(--info);
+  --color-surface: var(--surface);
+  --color-surface-hover: var(--surface-hover);
+  --color-ring: var(--ring);
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-muted: var(--text-muted);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
