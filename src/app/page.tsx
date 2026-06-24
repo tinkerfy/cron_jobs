@@ -4,8 +4,6 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { CronJob, formatDate, formatTime, buildDateTime } from "./lib/cron";
 import { MatchedJob } from "./lib/cron";
 
-const DEFAULT_RANGE_DAYS = 7;
-
 export default function Home() {
   const [jobs, setJobs] = useState<CronJob[]>([]);
   const [results, setResults] = useState<MatchedJob[] | null>(null);
@@ -27,6 +25,9 @@ export default function Home() {
 
   const fromMinutes = parseInt(fromTime.split(':')[0]) * 60 + parseInt(fromTime.split(':')[1]);
   const toMinutes = parseInt(toTime.split(':')[0]) * 60 + parseInt(toTime.split(':')[1]);
+
+  const validFromMinutes = isNaN(fromMinutes) ? 0 : fromMinutes;
+  const validToMinutes = isNaN(toMinutes) ? 1439 : toMinutes;
 
   const [isDragging, setIsDragging] = useState(false);
   const [dragHandle, setDragHandle] = useState<'from' | 'to' | null>(null);
@@ -104,21 +105,19 @@ export default function Home() {
       })
       .then((data: MatchedJob[]) => setResults(data.map(r => ({ ...r, matchedDates: r.matchedDates.map(d => new Date(d)) }))))
       .catch((err) => console.error("Failed to fetch filtered jobs:", err));
-  }, [fromDate, fromTime, toDate, toTime]);
+  }, []);
 
   useEffect(() => {
     const from = buildDateTime(fromDate, fromTime);
     const to = buildDateTime(toDate, toTime);
     fetchResults(from, to);
-  }, []);
-
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const defaultTo = new Date(today);
-  defaultTo.setDate(defaultTo.getDate() + DEFAULT_RANGE_DAYS);
+  }, [fetchResults, fromDate, fromTime, toDate, toTime]);
 
   const matchingCount = results?.length ?? 0;
   const totalCount = results?.reduce((sum, r) => sum + r.totalCount, 0) ?? 0;
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
@@ -142,7 +141,7 @@ export default function Home() {
 
       <main className="max-w-7xl mx-auto px-6 py-6">
         {/* Filter Panel */}
-        <div className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 mb-6">
+        <div className="bg-white dark:bg-slate-800/50 rounded-lg border border-slate-200 dark:border-slate-700 mb-6">
           {/* Panel header */}
           <div className="px-4 py-2.5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
             <span className="text-[11px] font-semibold text-slate-600 dark:text-slate-300 uppercase tracking-wider">Date Range</span>
@@ -154,53 +153,53 @@ export default function Home() {
             <div className="grid grid-cols-2 md:grid-cols-12 gap-x-3 gap-y-2 items-end">
               {/* From date */}
               <div className="col-span-1 md:col-span-3">
-                <label className="block text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">
+                <label className="block text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">
                   From
                 </label>
                 <input
                   type="date"
                   value={fromDate}
                   onChange={(e) => setFromDate(e.target.value)}
-                  className="w-full h-7 px-2 text-xs border border-slate-300 dark:border-slate-700 rounded bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors"
+                  className="w-full h-8 px-2.5 text-xs border border-slate-300 dark:border-slate-700 rounded bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors"
                 />
               </div>
 
               {/* From time */}
               <div className="col-span-1 md:col-span-2">
-                <label className="block text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">
+                <label className="block text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">
                   Time
                 </label>
                 <input
                   type="time"
                   value={fromTime}
                   onChange={(e) => setFromTime(e.target.value)}
-                  className="w-full h-7 px-2 text-xs border border-slate-300 dark:border-slate-700 rounded bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white font-mono focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors"
+                  className="w-full h-8 px-2.5 text-xs border border-slate-300 dark:border-slate-700 rounded bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white font-mono focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors"
                 />
               </div>
 
               {/* To date */}
               <div className="col-span-1 md:col-span-3">
-                <label className="block text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">
+                <label className="block text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">
                   To
                 </label>
                 <input
                   type="date"
                   value={toDate}
                   onChange={(e) => setToDate(e.target.value)}
-                  className="w-full h-7 px-2 text-xs border border-slate-300 dark:border-slate-700 rounded bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors"
+                  className="w-full h-8 px-2.5 text-xs border border-slate-300 dark:border-slate-700 rounded bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors"
                 />
               </div>
 
               {/* To time */}
               <div className="col-span-1 md:col-span-2">
-                <label className="block text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">
+                <label className="block text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">
                   Time
                 </label>
                 <input
                   type="time"
                   value={toTime}
                   onChange={(e) => setToTime(e.target.value)}
-                  className="w-full h-7 px-2 text-xs border border-slate-300 dark:border-slate-700 rounded bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white font-mono focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors"
+                  className="w-full h-8 px-2.5 text-xs border border-slate-300 dark:border-slate-700 rounded bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white font-mono focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors"
                 />
               </div>
 
@@ -227,15 +226,15 @@ export default function Home() {
           <div className="px-4 pb-3">
             <div
               ref={rulerRef}
-              className="relative h-5 rounded overflow-hidden cursor-default"
+              className="relative h-7 rounded overflow-hidden cursor-default"
               style={{ background: "linear-gradient(to bottom, #334155, #1e293b)" }}
             >
               {/* Hour labels */}
               {Array.from({ length: 25 }, (_, i) => (
                 <span
                   key={i}
-                  className="absolute text-[7px] text-slate-400 dark:text-slate-500 pointer-events-none"
-                  style={{ left: `${(i / 24) * 100}%`, transform: 'translateX(-50%)', top: 0 }}
+                  className="absolute text-[8px] text-slate-400 dark:text-slate-500 pointer-events-none"
+                  style={{ left: `${(i / 24) * 100}%`, transform: 'translateX(-50%)', top: 2 }}
                 >
                   {String(i % 24).padStart(2, "0")}:00
                 </span>
@@ -246,7 +245,7 @@ export default function Home() {
                 <div
                   key={i}
                   className="absolute pointer-events-none h-1.5 bg-slate-600/60"
-                  style={{ left: `${(i / 24) * 100}%`, width: 1, top: 8 }}
+                  style={{ left: `${(i / 24) * 100}%`, width: 1, top: 12 }}
                 />
               ))}
               
@@ -255,7 +254,7 @@ export default function Home() {
                 className="absolute pointer-events-none"
                 style={{
                   left: 0,
-                  width: `${fromMinutes / 1440 * 100}%`,
+                  width: `${validFromMinutes / 1440 * 100}%`,
                   top: 0,
                   height: '100%',
                   background: 'rgba(0,0,0,0.4)',
@@ -267,7 +266,7 @@ export default function Home() {
                 className="absolute pointer-events-none"
                 style={{
                   right: 0,
-                  width: `${(1440 - toMinutes) / 1440 * 100}%`,
+                  width: `${(1440 - validToMinutes) / 1440 * 100}%`,
                   top: 0,
                   height: '100%',
                   background: 'rgba(0,0,0,0.4)',
@@ -278,8 +277,8 @@ export default function Home() {
               <div
                 className="absolute pointer-events-none"
                 style={{
-                  left: `${fromMinutes / 1440 * 100}%`,
-                  width: `${(toMinutes - fromMinutes) / 1440 * 100}%`,
+                  left: `${validFromMinutes / 1440 * 100}%`,
+                  width: `${(validToMinutes - validFromMinutes) / 1440 * 100}%`,
                   top: 0,
                   height: '100%',
                   background: 'rgba(59, 130, 246, 0.15)',
@@ -288,42 +287,88 @@ export default function Home() {
               
               {/* Handle tracks */}
               <div
-                className="absolute h-3 pointer-events-none"
-                style={{ left: `${fromMinutes / 1440 * 100}%`, width: 12, top: 8, transform: 'translateX(-50%)' }}
+                className="absolute h-4 pointer-events-none"
+                style={{ left: `${validFromMinutes / 1440 * 100}%`, width: 16, top: 10, transform: 'translateX(-50%)' }}
               />
               <div
-                className="absolute h-3 pointer-events-none"
-                style={{ left: `${toMinutes / 1440 * 100}%`, width: 12, top: 8, transform: 'translateX(-50%)' }}
+                className="absolute h-4 pointer-events-none"
+                style={{ left: `${validToMinutes / 1440 * 100}%`, width: 16, top: 10, transform: 'translateX(-50%)' }}
               />
               
               {/* Handles */}
               <div
-                className="absolute w-2.5 h-4 cursor-ew-resize rounded-sm"
+                className="absolute w-3 h-5 cursor-ew-resize rounded-sm"
                 style={{
-                  left: `${fromMinutes / 1440 * 100}%`,
-                  top: 8,
+                  left: `${validFromMinutes / 1440 * 100}%`,
+                  top: 10,
                   transform: 'translateX(-50%)',
                   background: 'rgba(59, 130, 246, 0.15)',
                 }}
                 onMouseDown={(e) => handleRulerMouseDown(e, 'from')}
+                onKeyDown={(e) => {
+                  const step = e.shiftKey ? 60 : 5;
+                  if (e.key === 'ArrowLeft') {
+                    e.preventDefault();
+                    const newMinutes = Math.max(0, validFromMinutes - step);
+                    const h = String(Math.floor(newMinutes / 60)).padStart(2, '0');
+                    const m = String(newMinutes % 60).padStart(2, '0');
+                    setFromTime(`${h}:${m}`);
+                  }
+                  if (e.key === 'ArrowRight') {
+                    e.preventDefault();
+                    const newMinutes = Math.min(1439, validFromMinutes + step);
+                    const h = String(Math.floor(newMinutes / 60)).padStart(2, '0');
+                    const m = String(newMinutes % 60).padStart(2, '0');
+                    setFromTime(`${h}:${m}`);
+                  }
+                }}
+                tabIndex={0}
+                role="slider"
+                aria-label="From time"
+                aria-valuemin={0}
+                aria-valuemax={1439}
+                aria-valuenow={validFromMinutes}
               >
                 <div
-                  className="absolute w-1 h-3 bg-blue-400 rounded-full"
+                  className="absolute w-1 h-4 bg-blue-400 rounded-full"
                   style={{ left: '50%', top: 0, transform: 'translateX(-50%)' }}
                 />
               </div>
               <div
-                className="absolute w-2.5 h-4 cursor-ew-resize rounded-sm"
+                className="absolute w-3 h-5 cursor-ew-resize rounded-sm"
                 style={{
-                  left: `${toMinutes / 1440 * 100}%`,
-                  top: 8,
+                  left: `${validToMinutes / 1440 * 100}%`,
+                  top: 10,
                   transform: 'translateX(-50%)',
                   background: 'rgba(59, 130, 246, 0.15)',
                 }}
                 onMouseDown={(e) => handleRulerMouseDown(e, 'to')}
+                onKeyDown={(e) => {
+                  const step = e.shiftKey ? 60 : 5;
+                  if (e.key === 'ArrowLeft') {
+                    e.preventDefault();
+                    const newMinutes = Math.max(0, validToMinutes - step);
+                    const h = String(Math.floor(newMinutes / 60)).padStart(2, '0');
+                    const m = String(newMinutes % 60).padStart(2, '0');
+                    setToTime(`${h}:${m}`);
+                  }
+                  if (e.key === 'ArrowRight') {
+                    e.preventDefault();
+                    const newMinutes = Math.min(1439, validToMinutes + step);
+                    const h = String(Math.floor(newMinutes / 60)).padStart(2, '0');
+                    const m = String(newMinutes % 60).padStart(2, '0');
+                    setToTime(`${h}:${m}`);
+                  }
+                }}
+                tabIndex={0}
+                role="slider"
+                aria-label="To time"
+                aria-valuemin={0}
+                aria-valuemax={1439}
+                aria-valuenow={validToMinutes}
               >
                 <div
-                  className="absolute w-1 h-3 bg-blue-400 rounded-full"
+                  className="absolute w-1 h-4 bg-blue-400 rounded-full"
                   style={{ left: '50%', top: 0, transform: 'translateX(-50%)' }}
                 />
               </div>
@@ -335,7 +380,7 @@ export default function Home() {
 
           {/* Quick range buttons */}
           <div className="px-4 py-2 border-t border-slate-100 dark:border-slate-800 flex flex-wrap items-center gap-1.5">
-            <span className="text-[10px] font-medium text-slate-400 dark:text-slate-500 mr-0.5">Quick:</span>
+            <span className="text-[11px] font-medium text-slate-400 dark:text-slate-500 mr-0.5">Quick:</span>
             <div className="flex flex-wrap gap-1">
             {([
               [0, "Today"],
@@ -358,7 +403,7 @@ export default function Home() {
                     setToTime("23:59");
                     fetchResults(quickFrom, quickTo);
                   }}
-                  className="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 transition-colors"
+                  className="text-[11px] px-2 py-0.5 rounded-full bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 transition-colors"
                 >
                   {label}
                 </button>
@@ -387,7 +432,7 @@ export default function Home() {
                     setToTime(`${pad(quickTo.getHours())}:${pad(quickTo.getMinutes())}`);
                     fetchResults(quickFrom, quickTo);
                   }}
-                  className="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 transition-colors"
+                  className="text-[11px] px-2 py-0.5 rounded-full bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 transition-colors"
                 >
                   {label}
                 </button>
@@ -396,10 +441,10 @@ export default function Home() {
             </div>
             <button
               onClick={() => setShowExecutionDates(!showExecutionDates)}
-              className={`ml-auto text-[10px] px-2 py-0.5 rounded transition-colors border ${
+              className={`ml-auto text-[11px] px-3 py-1 rounded-full transition-colors ${
                 showExecutionDates
-                  ? "bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/30 dark:hover:bg-blue-900/40 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800"
-                  : "bg-white hover:bg-slate-50 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700"
+                  ? "bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/30 dark:hover:bg-blue-900/40 text-blue-700 dark:text-blue-300"
+                  : "bg-white hover:bg-slate-50 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400"
               }`}
             >
               {showExecutionDates ? "Hide Dates" : "Show Dates"}
@@ -440,31 +485,31 @@ export default function Home() {
             </div>
 
             {/* Job cards */}
-            <div className="space-y-1.5">
-              {results.map(({ job, matchedDates, totalCount }) => (
+            <div className="space-y-2">
+              {results.map(({ job, matchedDates, totalCount }, idx) => (
                 <div
-                  key={job.name}
-                  className={`rounded-lg border transition-all ${
+                  key={`${job.name}-${idx}`}
+                  className={`rounded-lg border transition-colors ${
                     job.status === "false"
                       ? "bg-slate-50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-800 opacity-50"
                       : totalCount > 0
-                        ? "bg-white dark:bg-slate-900 border-blue-200 dark:border-blue-900"
+                        ? "bg-white dark:bg-slate-800 border-blue-200 dark:border-blue-800"
                         : "bg-slate-50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-800 opacity-60"
                   }`}
                 >
                   <div className="px-4 py-3">
                     <div className="flex items-start gap-2.5">
-                      <div className={`mt-0.5 w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 ${
+                      <div className={`mt-0.5 w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 ${
                         job.status === "true"
                           ? "bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400"
                           : "bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400"
                       }`}>
                         {job.status === "true" ? (
-                          <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
                             <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                           </svg>
                         ) : (
-                          <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
                             <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                           </svg>
                         )}
@@ -511,7 +556,7 @@ export default function Home() {
                             {matchedDates.map((date, i) => (
                               <span
                                 key={`${job.name}-${i}`}
-                                className="inline-flex items-center text-[9px] px-1 py-0.5 bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 rounded"
+                                className="inline-flex items-center text-[10px] px-1 py-0.5 bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 rounded"
                               >
                                 {formatDate(date)} {formatTime(date)}
                               </span>
@@ -523,7 +568,7 @@ export default function Home() {
                               {matchedDates.slice(0, 50).map((date, i) => (
                                 <span
                                   key={i}
-                                  className="inline-flex items-center text-[9px] px-1 py-0.5 bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 rounded"
+                                  className="inline-flex items-center text-[10px] px-1 py-0.5 bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 rounded"
                                 >
                                   {formatDate(date)} {formatTime(date)}
                                 </span>
