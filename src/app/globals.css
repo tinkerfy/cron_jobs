@@ -3,13 +3,29 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #F5FAF7;
+  --foreground: #204D4C;
+  --primary: #51A090;
+  --primary-hover: #468F80;
+  --border: #D9ECD2;
+  --selected: #E4F2E7;
+  --info: #AEE0E8;
+  --text-primary: #204D4C;
+  --text-secondary: #4A7A78;
+  --text-muted: #8BAFAD;
+  --surface: #FFFFFF;
+  --surface-hover: #F0F7F2;
+  --ring: #51A090;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-border: var(--border);
+  --color-selected: var(--selected);
+  --color-info: var(--info);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
@@ -17,6 +33,17 @@
 html.dark {
   --background: #0a0a0a;
   --foreground: #ededed;
+  --primary: #51A090;
+  --primary-hover: #5DB8A0;
+  --border: #2D4A48;
+  --selected: #1A3A38;
+  --info: #1A4A50;
+  --text-primary: #EDEDED;
+  --text-secondary: #A0B0AE;
+  --text-muted: #6A8A88;
+  --surface: #1A1A1A;
+  --surface-hover: #252525;
+  --ring: #51A090;
 }
 
 body {

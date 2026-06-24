@@ -142,17 +142,17 @@ export default function Home() {
   today.setHours(0, 0, 0, 0);
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
+    <div className="min-h-screen bg-[#F5FAF7] dark:bg-slate-950">
       {/* Header */}
-      <header className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800">
+      <header className="bg-[#FFFFFF] dark:bg-slate-900 border-b border-[#D9ECD2] dark:border-slate-800">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
           <div>
-            <h1 className="text-lg font-semibold text-slate-900 dark:text-white tracking-tight">Cron Job Viewer</h1>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+            <h1 className="text-lg font-semibold text-[#204D4C] dark:text-white tracking-tight">Cron Job Viewer</h1>
+            <p className="text-xs text-[#8BAFAD] dark:text-slate-400 mt-0.5">
               View which cron jobs fire within a selected date range
             </p>
           </div>
-          <div className="flex items-center gap-3 text-xs text-slate-500 dark:text-slate-400">
+          <div className="flex items-center gap-3 text-xs text-[#8BAFAD] dark:text-slate-400">
             <ThemeToggle />
             <span className="flex items-center gap-1.5">
               <span className="w-2 h-2 rounded-full bg-green-500"></span>
@@ -164,23 +164,23 @@ export default function Home() {
 
       <main className="max-w-7xl mx-auto px-6 py-6">
         {/* Filter Panel */}
-        <div className="bg-white dark:bg-slate-800/50 rounded-lg border border-slate-200 dark:border-slate-700 mb-6">
+        <div className="bg-[#FFFFFF] dark:bg-slate-800/50 rounded-lg border border-[#D9ECD2] dark:border-slate-700 mb-6">
           {/* Panel header */}
-          <div className="px-4 py-2.5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
-            <span className="text-[11px] font-semibold text-slate-600 dark:text-slate-300 uppercase tracking-wider">
+          <div className="px-4 py-2.5 border-b border-[#D9ECD2] dark:border-slate-800 flex items-center justify-between">
+            <span className="text-[11px] font-semibold text-[#204D4C] dark:text-slate-300 uppercase tracking-wider">
               Date Range
               {selectedServers.length > 0 && (
-                <span className="ml-2 text-blue-600 dark:text-blue-400">
+                <span className="ml-2 text-[#51A090] dark:text-blue-400">
                   ({selectedServers.length} server{selectedServers.length > 1 ? "s" : ""})
                 </span>
               )}
               {selectedStatuses.length > 0 && (
-                <span className="ml-2 text-blue-600 dark:text-blue-400">
+                <span className="ml-2 text-[#51A090] dark:text-blue-400">
                   ({selectedStatuses.length} status{selectedStatuses.length > 1 ? "s" : ""})
                 </span>
               )}
             </span>
-            <span className="text-[11px] text-slate-400 dark:text-slate-500">{matchingCount > 0 ? `${matchingCount} of ${jobs.length} jobs` : "No filter applied"}</span>
+            <span className="text-[11px] text-[#8BAFAD] dark:text-slate-500">{matchingCount > 0 ? `${matchingCount} of ${jobs.length} jobs` : "No filter applied"}</span>
           </div>
 
           {/* Date/time inputs */}
@@ -188,7 +188,7 @@ export default function Home() {
             <div className="flex items-start gap-4 mb-2">
               {/* Server filter */}
               <div className="flex-1 min-w-0">
-                <label className="block text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">
+                <label className="block text-[11px] font-semibold text-[#204D4C] dark:text-slate-400 uppercase tracking-wider mb-1">
                   Server
                 </label>
                 <div className="flex flex-wrap gap-1">
@@ -197,8 +197,8 @@ export default function Home() {
                     onClick={() => setSelectedServers([])}
                     className={`h-7 px-2.5 text-[11px] font-medium rounded-full transition-colors ${
                       selectedServers.length === 0
-                        ? "bg-blue-600 text-white"
-                        : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700"
+                        ? "bg-[#51A090] text-white"
+                        : "bg-[#E4F2E7] dark:bg-slate-800 text-[#204D4C] dark:text-slate-300 hover:bg-[#F0F7F2] dark:hover:bg-slate-700"
                     }`}
                   >
                     All
@@ -216,8 +216,8 @@ export default function Home() {
                       }}
                       className={`h-7 px-2.5 text-[11px] font-medium rounded-full transition-colors ${
                         selectedServers.includes(server)
-                          ? "bg-blue-600 text-white"
-                          : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700"
+                          ? "bg-[#51A090] text-white"
+                          : "bg-[#E4F2E7] dark:bg-slate-800 text-[#204D4C] dark:text-slate-300 hover:bg-[#F0F7F2] dark:hover:bg-slate-700"
                       }`}
                     >
                       {server}
@@ -228,7 +228,7 @@ export default function Home() {
 
               {/* Status filter */}
               <div className="flex-1 min-w-0">
-                <label className="block text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">
+                <label className="block text-[11px] font-semibold text-[#204D4C] dark:text-slate-400 uppercase tracking-wider mb-1">
                   Status
                 </label>
                 <div className="flex flex-wrap gap-1">
@@ -237,8 +237,8 @@ export default function Home() {
                     onClick={() => setSelectedStatuses([])}
                     className={`h-7 px-2.5 text-[11px] font-medium rounded-full transition-colors ${
                       selectedStatuses.length === 0
-                        ? "bg-blue-600 text-white"
-                        : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700"
+                        ? "bg-[#51A090] text-white"
+                        : "bg-[#E4F2E7] dark:bg-slate-800 text-[#204D4C] dark:text-slate-300 hover:bg-[#F0F7F2] dark:hover:bg-slate-700"
                     }`}
                   >
                     All
@@ -256,8 +256,8 @@ export default function Home() {
                       }}
                       className={`h-7 px-2.5 text-[11px] font-medium rounded-full transition-colors ${
                         selectedStatuses.includes(status)
-                          ? "bg-blue-600 text-white"
-                          : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700"
+                          ? "bg-[#51A090] text-white"
+                          : "bg-[#E4F2E7] dark:bg-slate-800 text-[#204D4C] dark:text-slate-300 hover:bg-[#F0F7F2] dark:hover:bg-slate-700"
                       }`}
                     >
                       {status === "true" ? "Enabled" : "Disabled"}
@@ -268,7 +268,7 @@ export default function Home() {
 
               {/* Service search */}
               <div className="flex-1 min-w-0">
-                <label className="block text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">
+                <label className="block text-[11px] font-semibold text-[#204D4C] dark:text-slate-400 uppercase tracking-wider mb-1">
                   Service
                 </label>
                 <input
@@ -276,7 +276,7 @@ export default function Home() {
                   value={searchService}
                   onChange={(e) => setSearchService(e.target.value)}
                   placeholder="Search service..."
-                  className="w-full h-7 px-2.5 text-[11px] border border-slate-300 dark:border-slate-700 rounded bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors"
+                  className="w-full h-7 px-2.5 text-[11px] border border-[#D9ECD2] dark:border-slate-700 rounded bg-[#F5FAF7] dark:bg-slate-800 text-[#204D4C] dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:ring-1 focus:ring-[#51A090] focus:border-[#51A090] outline-none transition-colors"
                 />
               </div>
             </div>
@@ -291,7 +291,7 @@ export default function Home() {
                   type="date"
                   value={fromDate}
                   onChange={(e) => setFromDate(e.target.value)}
-                  className="w-full h-8 px-2.5 text-xs border border-slate-300 dark:border-slate-700 rounded bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors"
+                  className="w-full h-8 px-2.5 text-xs border border-[#D9ECD2] dark:border-slate-700 rounded bg-[#F5FAF7] dark:bg-slate-800 text-[#204D4C] dark:text-white focus:ring-1 focus:ring-[#51A090] focus:border-[#51A090] outline-none transition-colors"
                 />
               </div>
 
@@ -304,7 +304,7 @@ export default function Home() {
                   type="time"
                   value={fromTime}
                   onChange={(e) => setFromTime(e.target.value)}
-                  className="w-full h-8 px-2.5 text-xs border border-slate-300 dark:border-slate-700 rounded bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white font-mono focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors"
+                  className="w-full h-8 px-2.5 text-xs border border-[#D9ECD2] dark:border-slate-700 rounded bg-[#F5FAF7] dark:bg-slate-800 text-[#204D4C] dark:text-white font-mono focus:ring-1 focus:ring-[#51A090] focus:border-[#51A090] outline-none transition-colors"
                 />
               </div>
 
@@ -317,7 +317,7 @@ export default function Home() {
                   type="date"
                   value={toDate}
                   onChange={(e) => setToDate(e.target.value)}
-                  className="w-full h-8 px-2.5 text-xs border border-slate-300 dark:border-slate-700 rounded bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors"
+                  className="w-full h-8 px-2.5 text-xs border border-[#D9ECD2] dark:border-slate-700 rounded bg-[#F5FAF7] dark:bg-slate-800 text-[#204D4C] dark:text-white focus:ring-1 focus:ring-[#51A090] focus:border-[#51A090] outline-none transition-colors"
                 />
               </div>
 
@@ -330,7 +330,7 @@ export default function Home() {
                   type="time"
                   value={toTime}
                   onChange={(e) => setToTime(e.target.value)}
-                  className="w-full h-8 px-2.5 text-xs border border-slate-300 dark:border-slate-700 rounded bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white font-mono focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors"
+                  className="w-full h-8 px-2.5 text-xs border border-[#D9ECD2] dark:border-slate-700 rounded bg-[#F5FAF7] dark:bg-slate-800 text-[#204D4C] dark:text-white font-mono focus:ring-1 focus:ring-[#51A090] focus:border-[#51A090] outline-none transition-colors"
                 />
               </div>
 
@@ -342,7 +342,7 @@ export default function Home() {
                     const to = buildDateTime(toDate, toTime);
                     fetchResults(from, to);
                   }}
-                  className="w-full h-7 px-3 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white text-xs font-medium rounded transition-colors flex items-center justify-center gap-1.5"
+                  className="w-full h-7 px-3 bg-[#51A090] hover:bg-[#468F80] active:bg-[#3D8070] text-white text-xs font-medium rounded transition-colors flex items-center justify-center gap-1.5"
                 >
                   <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
