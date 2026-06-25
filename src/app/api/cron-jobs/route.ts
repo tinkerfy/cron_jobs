@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
 
     if (compositeServiceName) {
       whereClauses.push("compositeservicename LIKE ?");
-      params.push(`${compositeServiceName}%`);
+      params.push(`%${compositeServiceName}%`);
     }
     if (server) {
       const servers = server.split(",").map(s => s.trim()).filter(Boolean);

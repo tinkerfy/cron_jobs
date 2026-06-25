@@ -37,7 +37,22 @@ interface GibberishLoadingProps {
 }
 
 export default function GibberishLoading({ active, label = "Loading" }: GibberishLoadingProps) {
-  const [phrase, setPhrase] = useState(() => generatePhrase());
+  const [phrase, setPhrase] = useState(() => "Initializing Fluxon Matrix...");
+  const [key, setKey] = useState(0);
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    if (active) {
+      setKey((k) => k + 1);
+      setPhrase(generatePhrase());
+      setVisible(true);
+    } else {
+      const timer = setTimeout(() => {
+        setVisible(false);
+      }, 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [active]);
 
   useEffect(() => {
     if (!active) return;
@@ -57,21 +72,15 @@ export default function GibberishLoading({ active, label = "Loading" }: Gibberis
     return () => clearTimeout(timer);
   }, [active]);
 
-  if (!active) return null;
+  if (!active) return <div className="h-5" />;
 
   return (
     <div
       role="status"
       aria-live="polite"
-      className="flex items-center justify-center gap-2 py-3 animate-fade-in"
+      className="flex items-center justify-center gap-2 h-5"
     >
       <span className="sr-only">{label}, please wait.</span>
-      <div className="relative w-5 h-5">
-        <div className="absolute inset-0 rounded-full border-2 border-[#D9ECD2] dark:border-slate-700" />
-        <div
-          className="absolute inset-0 rounded-full border-2 border-transparent border-t-[#51A090] dark:border-t-[#6AD4B8] animate-spin"
-        />
-      </div>
       <span className="text-xs text-[#8BAFAD] dark:text-slate-500 font-mono tabular-nums">
         {phrase}
       </span>

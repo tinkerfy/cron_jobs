@@ -14,6 +14,16 @@ export default function Home() {
   const [selectedStatuses, setSelectedStatuses] = useState<string[]>([]);
   const [selectedSchedulers, setSelectedSchedulers] = useState<string[]>([]);
   const [searchService, setSearchService] = useState("");
+  const [debouncedService, setDebouncedService] = useState("");
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      setDebouncedService(searchService);
+    }, 2000);
+    return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
+  }, [searchService]);
   const [fromDate, setFromDate] = useState(() => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -109,7 +119,7 @@ export default function Home() {
       .finally(() => setLoading(false));
   }, []);
 
-  const fetchResults = useCallback((from: Date, to: Date) => {
+  const fetchResults = useCallback((from: Date, to: Date, service?: string) => {
     setLoading(true);
     const fmt = (d: Date) =>
       `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}T${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
@@ -126,8 +136,9 @@ export default function Home() {
     if (selectedServers.length > 0) {
       params.set("server", selectedServers.join(","));
     }
-    if (searchService) {
-      params.set("compositeServiceName", searchService);
+    const serviceToUse = service !== undefined ? service : debouncedService;
+    if (serviceToUse) {
+      params.set("compositeServiceName", serviceToUse);
     }
     fetch(`/api/cron-jobs?${params.toString()}`)
       .then((res) => {
@@ -137,7 +148,7 @@ export default function Home() {
       .then((data: MatchedJob[]) => setResults(data.map(r => ({ ...r, matchedDates: r.matchedDates.map(d => new Date(d)) }))))
       .catch((err) => console.error("Failed to fetch filtered jobs:", err))
       .finally(() => setLoading(false));
-  }, [selectedServers, selectedStatuses, selectedSchedulers, searchService]);
+  }, [selectedServers, selectedStatuses, selectedSchedulers, debouncedService]);
 
   useEffect(() => {
     const from = buildDateTime(fromDate, fromTime);
@@ -154,13 +165,16 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-[#F5FAF7] dark:bg-slate-950">
       {/* Header */}
-      <header className="bg-[#FFFFFF] dark:bg-slate-900 border-b border-[#D9ECD2] dark:border-slate-800">
+      <header className="bg-[#FFFFFF] dark:bg-slate-900 border-b border-[#D9ECD2] dark:border-slate-800 min-h-[72px]">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
           <div>
             <h1 className="text-lg font-semibold text-[#204D4C] dark:text-white tracking-tight">Cron Job Viewer</h1>
-            <p className="text-xs text-[#8BAFAD] dark:text-slate-400 mt-0.5">
+            {/* <p className="text-xs text-[#8BAFAD] dark:text-slate-400 mt-0.5">
               View which cron jobs fire within a selected date range
-            </p>
+            </p> */}
+            <div className="overflow-hidden">
+              <GibberishLoading active={loading} />
+            </div>
           </div>
           <div className="flex items-center gap-3 text-xs text-[#8BAFAD] dark:text-slate-400">
             <ThemeToggle />
@@ -330,6 +344,12 @@ export default function Home() {
                   type="text"
                   value={searchService}
                   onChange={(e) => setSearchService(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      if (debounceRef.current) clearTimeout(debounceRef.current);
+                      setDebouncedService(searchService);
+                    }
+                  }}
                   placeholder="Search service..."
                   className="w-full h-7 px-2.5 text-[11px] border border-[#D9ECD2] dark:border-slate-700 rounded bg-[#F5FAF7] dark:bg-slate-800 text-[#204D4C] dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:ring-1 focus:ring-[#51A090] focus:border-[#51A090] outline-none transition-colors"
                 />
@@ -678,9 +698,7 @@ export default function Home() {
         </div>
 
         {/* Results */}
-        {loading ? (
-          <GibberishLoading active={loading} />
-        ) : results === null ? (
+        {results === null ? (
           <div className="text-center py-16">
             <div className="text-4xl mb-3 opacity-30">⏰</div>
             <h2 className="text-base font-semibold text-slate-500 dark:text-slate-400 mb-1">
