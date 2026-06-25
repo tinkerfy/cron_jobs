@@ -437,7 +437,7 @@ export default function Home() {
             <div
               ref={rulerRef}
               className="relative h-7 rounded overflow-hidden cursor-default"
-              style={{ background: "linear-gradient(to bottom, #F5FAF7, #E4F2E7)" }}
+              style={{ background: "linear-gradient(to bottom, #DCE8D8, #C8DEC8)" }}
             >
               {/* Hour labels */}
               {Array.from({ length: 25 }, (_, i) => (
@@ -467,7 +467,7 @@ export default function Home() {
                   width: `${validFromMinutes / 1440 * 100}%`,
                   top: 0,
                   height: '100%',
-                  background: 'rgba(32, 77, 76, 0.12)',
+                  background: 'rgba(32, 77, 76, 0.5)',
                 }}
               />
               
@@ -479,7 +479,7 @@ export default function Home() {
                   width: `${(1440 - validToMinutes) / 1440 * 100}%`,
                   top: 0,
                   height: '100%',
-                  background: 'rgba(32, 77, 76, 0.12)',
+                  background: 'rgba(32, 77, 76, 0.5)',
                 }}
               />
               
