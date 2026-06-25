@@ -193,7 +193,7 @@ export default function Home() {
           </div>
 
           {/* Date/time inputs */}
-          <div className="px-4 py-3">
+          <div className="px-4 py-3 border-t border-[#D9ECD2] dark:border-slate-800">
             <div className="flex items-start gap-4 mb-2">
               {/* Server filter */}
               <div className="flex-1 min-w-0">
@@ -330,6 +330,11 @@ export default function Home() {
               </div>
             </div>
 
+            {/* Divider */}
+            <div className="my-3">
+              <div className="h-px bg-gradient-to-r from-transparent via-[#A3C4A0] to-transparent dark:via-slate-700" />
+            </div>
+
             <div className="grid grid-cols-2 md:grid-cols-12 gap-x-3 gap-y-2 items-end">
               {/* From date */}
               <div className="col-span-1 md:col-span-3">
@@ -408,14 +413,14 @@ export default function Home() {
             <div
               ref={rulerRef}
               className="relative h-7 rounded overflow-hidden cursor-default"
-              style={{ background: "var(--ruler-bg)" }}
+              style={{ background: "linear-gradient(to bottom, #F5FAF7, #E4F2E7)" }}
             >
               {/* Hour labels */}
               {Array.from({ length: 25 }, (_, i) => (
                 <span
                   key={i}
-                  className="absolute text-[8px] pointer-events-none"
-                  style={{ left: `${(i / 24) * 100}%`, transform: 'translateX(-50%)', top: 2, color: 'var(--ruler-text)' }}
+                  className="absolute text-[8px] pointer-events-none text-[#204D4C]"
+                  style={{ left: `${(i / 24) * 100}%`, transform: 'translateX(-50%)', top: 2 }}
                 >
                   {String(i % 24).padStart(2, "0")}:00
                 </span>
@@ -426,7 +431,7 @@ export default function Home() {
                 <div
                   key={i}
                 className="absolute pointer-events-none h-1.5"
-                style={{ left: `${(i / 24) * 100}%`, width: 1, top: 12, backgroundColor: 'var(--ruler-tick)' }}
+                style={{ left: `${(i / 24) * 100}%`, width: 1, top: 12, backgroundColor: 'rgba(32, 77, 76, 0.2)' }}
                 />
               ))}
               
@@ -438,7 +443,7 @@ export default function Home() {
                   width: `${validFromMinutes / 1440 * 100}%`,
                   top: 0,
                   height: '100%',
-                  background: 'var(--ruler-dim)',
+                  background: 'rgba(32, 77, 76, 0.12)',
                 }}
               />
               
@@ -450,7 +455,7 @@ export default function Home() {
                   width: `${(1440 - validToMinutes) / 1440 * 100}%`,
                   top: 0,
                   height: '100%',
-                  background: 'var(--ruler-dim)',
+                  background: 'rgba(32, 77, 76, 0.12)',
                 }}
               />
               
@@ -462,8 +467,18 @@ export default function Home() {
                   width: `${(validToMinutes - validFromMinutes) / 1440 * 100}%`,
                   top: 0,
                   height: '100%',
-                  background: 'var(--ruler-selected)',
+                  background: 'rgba(81, 160, 144, 0.15)',
                 }}
+              />
+              
+              {/* Handle tracks */}
+              <div
+                className="absolute h-4 pointer-events-none"
+                style={{ left: `${validFromMinutes / 1440 * 100}%`, width: 16, top: 10, transform: 'translateX(-50%)' }}
+              />
+              <div
+                className="absolute h-4 pointer-events-none"
+                style={{ left: `${validToMinutes / 1440 * 100}%`, width: 16, top: 10, transform: 'translateX(-50%)' }}
               />
               
               {/* Handles */}
@@ -473,7 +488,7 @@ export default function Home() {
                   left: `${validFromMinutes / 1440 * 100}%`,
                   top: 10,
                   transform: 'translateX(-50%)',
-                  background: 'var(--ruler-handle)',
+                  background: '#51A090',
                 }}
                 onMouseDown={(e) => handleRulerMouseDown(e, 'from')}
                 onKeyDown={(e) => {
@@ -501,8 +516,8 @@ export default function Home() {
                 aria-valuenow={validFromMinutes}
               >
                 <div
-                  className="absolute w-1 h-4 rounded-full"
-                  style={{ left: '50%', top: 0, transform: 'translateX(-50%)', backgroundColor: 'var(--ruler-indicator)' }}
+                  className="absolute w-1 h-4 bg-blue-400 rounded-full"
+                  style={{ left: '50%', top: 0, transform: 'translateX(-50%)' }}
                 />
               </div>
               <div
@@ -511,7 +526,7 @@ export default function Home() {
                   left: `${validToMinutes / 1440 * 100}%`,
                   top: 10,
                   transform: 'translateX(-50%)',
-                  background: 'var(--ruler-handle)',
+                  background: '#51A090',
                 }}
                 onMouseDown={(e) => handleRulerMouseDown(e, 'to')}
                 onKeyDown={(e) => {
@@ -539,13 +554,13 @@ export default function Home() {
                 aria-valuenow={validToMinutes}
               >
                 <div
-                  className="absolute w-1 h-4 rounded-full"
-                  style={{ left: '50%', top: 0, transform: 'translateX(-50%)', backgroundColor: 'var(--ruler-indicator)' }}
+                  className="absolute w-1 h-4 bg-blue-400 rounded-full"
+                  style={{ left: '50%', top: 0, transform: 'translateX(-50%)' }}
                 />
               </div>
               
               {/* Subtle inner shadow */}
-              <div className="absolute inset-0 pointer-events-none" style={{ boxShadow: "var(--ruler-shadow)" }} />
+              <div className="absolute inset-0 pointer-events-none" style={{ boxShadow: "inset 0 1px 2px rgba(0,0,0,0.08)" }} />
             </div>
           </div>
 
