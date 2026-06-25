@@ -25,17 +25,15 @@ export default function Home() {
     return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
   }, [searchService]);
   const [fromDate, setFromDate] = useState(() => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    return today.toISOString().split("T")[0];
+    const d = new Date();
+    const pad = (n: number) => String(n).padStart(2, "0");
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
   });
   const [fromTime, setFromTime] = useState("00:00");
   const [toDate, setToDate] = useState(() => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const defaultTo = new Date(today);
-    defaultTo.setDate(defaultTo.getDate() + 7);
-    return defaultTo.toISOString().split("T")[0];
+    const d = new Date();
+    const pad = (n: number) => String(n).padStart(2, "0");
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
   });
   const [toTime, setToTime] = useState("23:59");
   const [showExecutionDates, setShowExecutionDates] = useState(true);
@@ -232,7 +230,7 @@ export default function Home() {
                   >
                     All
                   </button>
-                  {servers.map((server) => (
+                  {[...servers].sort().map((server) => (
                     <button
                       key={server}
                       type="button"
@@ -423,7 +421,7 @@ export default function Home() {
                     const to = buildDateTime(toDate, toTime);
                     fetchResults(from, to);
                   }}
-                  className="w-full h-7 px-3 bg-[#51A090] hover:bg-[#468F80] active:bg-[#3D8070] text-white text-xs font-medium rounded transition-colors flex items-center justify-center gap-1.5"
+                  className="w-full h-8 px-3 bg-[#51A090] hover:bg-[#468F80] active:bg-[#3D8070] text-white text-xs font-medium rounded border border-[#51A090] transition-colors flex items-center justify-center gap-1.5"
                 >
                   <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
