@@ -167,9 +167,6 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
           <div>
             <h1 className="text-lg font-semibold text-[#204D4C] dark:text-white tracking-tight">Cron Job Viewer</h1>
-            {/* <p className="text-xs text-[#8BAFAD] dark:text-slate-400 mt-0.5">
-              View which cron jobs fire within a selected date range
-            </p> */}
             <div className="overflow-hidden">
               <GibberishLoading active={loading} />
             </div>
@@ -188,7 +185,7 @@ export default function Home() {
         {/* Filter Panel */}
         <div className="bg-[#E8F0EA] dark:bg-slate-900 rounded-lg border border-[#D9ECD2] dark:border-slate-700 mb-6">
           {/* Panel header */}
-          <div className="px-4 py-2.5 border-b border-[#D9ECD2] dark:border-slate-800 flex items-center justify-between">
+          {/* <div className="px-4 py-2.5 border-b border-[#D9ECD2] dark:border-slate-800 flex items-center justify-between">
             <span className="text-[11px] font-semibold text-[#204D4C] dark:text-slate-300 uppercase tracking-wider">
               Date Range
               {selectedServers.length > 0 && (
@@ -208,7 +205,7 @@ export default function Home() {
               )}
             </span>
             <span className="text-[11px] text-[#8BAFAD] dark:text-slate-500">{matchingCount > 0 ? `${matchingCount} of ${jobs.length} jobs` : "No filter applied"}</span>
-          </div>
+          </div> */}
 
           {/* Date/time inputs */}
           <div className="px-4 py-3 border-t border-[#D9ECD2] dark:border-slate-800">
@@ -684,7 +681,7 @@ export default function Home() {
               type="button"
               aria-pressed={showExecutionDates}
               onClick={() => setShowExecutionDates(!showExecutionDates)}
-              className={`ml-auto text-[11px] px-3 py-1 rounded-full transition-colors ${
+              className={`ml-auto text-[10px] px-2 py-0.5 rounded-full transition-colors ${
                 showExecutionDates
                   ? "bg-[#E4F2E7] dark:bg-[#1A3A38] text-[#51A090] dark:text-[#6AD4B8] hover:bg-[#D9ECD2] dark:hover:bg-[#2D4A48]"
                   : "bg-white hover:bg-slate-50 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400"
