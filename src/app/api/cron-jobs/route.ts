@@ -9,6 +9,7 @@ interface CronJob {
   server: string | null;
   compositeServiceName: string | null;
   status: string;
+  scheduler: boolean | null;
 }
 
 export async function GET(request: NextRequest) {
@@ -19,6 +20,7 @@ export async function GET(request: NextRequest) {
     const compositeServiceName = searchParams.get("compositeServiceName");
     const server = searchParams.get("server");
     const status = searchParams.get("status");
+    const scheduler = searchParams.get("scheduler");
 
     const whereClauses: string[] = [];
     const params: (string | number)[] = [];
@@ -49,15 +51,26 @@ export async function GET(request: NextRequest) {
         params.push(...statuses);
       }
     }
+    if (scheduler) {
+      const schedulers = scheduler.split(",").map(s => s.trim()).filter(Boolean);
+      if (schedulers.length === 1) {
+        whereClauses.push("scheduler = ?");
+        params.push(schedulers[0] === "true" ? 1 : 0);
+      } else if (schedulers.length > 1) {
+        const placeholders = schedulers.map(() => "?").join(", ");
+        whereClauses.push(`scheduler IN (${placeholders})`);
+        params.push(...schedulers.map(s => s === "true" ? 1 : 0));
+      }
+    }
     const whereClause = whereClauses.length > 0 ? `WHERE ${whereClauses.join(" AND ")}` : "";
 
     const [result] = await pool.query(
-      `SELECT name, minutes, hours, days, months, weeks, years, server, compositeservicename, status, description
+      `SELECT name, minutes, hours, days, months, weeks, years, server, compositeservicename, status, scheduler, description
         FROM cron_jobs
         ${whereClause}
         ORDER BY name`,
       params
-    ) as unknown as [{ name: string; minutes: string; hours: string; days: string; months: string; weeks: string; years: string; server: string | null; compositeservicename: string | null; status: string; description: string }[]];
+    ) as unknown as [{ name: string; minutes: string; hours: string; days: string; months: string; weeks: string; years: string; server: string | null; compositeservicename: string | null; status: string; scheduler: boolean | null; description: string }[]];
 
     const jobs: CronJob[] = result.map((row) => ({
       name: row.name,
@@ -66,6 +79,7 @@ export async function GET(request: NextRequest) {
       server: row.server,
       compositeServiceName: row.compositeservicename,
       status: row.status,
+      scheduler: row.scheduler,
     }));
 
     const servers = Array.from(new Set(result.map(r => r.server).filter(Boolean))) as string[];

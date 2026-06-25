@@ -11,6 +11,7 @@ export default function Home() {
   const [servers, setServers] = useState<string[]>([]);
   const [selectedServers, setSelectedServers] = useState<string[]>([]);
   const [selectedStatuses, setSelectedStatuses] = useState<string[]>([]);
+  const [selectedSchedulers, setSelectedSchedulers] = useState<string[]>([]);
   const [searchService, setSearchService] = useState("");
   const [fromDate, setFromDate] = useState(() => {
     const today = new Date();
@@ -114,6 +115,9 @@ export default function Home() {
     if (selectedStatuses.length > 0) {
       params.set("status", selectedStatuses.join(","));
     }
+    if (selectedSchedulers.length > 0) {
+      params.set("scheduler", selectedSchedulers.join(","));
+    }
     if (selectedServers.length > 0) {
       params.set("server", selectedServers.join(","));
     }
@@ -127,7 +131,7 @@ export default function Home() {
       })
       .then((data: MatchedJob[]) => setResults(data.map(r => ({ ...r, matchedDates: r.matchedDates.map(d => new Date(d)) }))))
       .catch((err) => console.error("Failed to fetch filtered jobs:", err));
-  }, [selectedServers, selectedStatuses, searchService]);
+  }, [selectedServers, selectedStatuses, selectedSchedulers, searchService]);
 
   useEffect(() => {
     const from = buildDateTime(fromDate, fromTime);
@@ -142,17 +146,17 @@ export default function Home() {
   today.setHours(0, 0, 0, 0);
 
   return (
-    <div className="min-h-screen bg-background dark:bg-[#0a0a0a]">
+    <div className="min-h-screen bg-[#F5FAF7] dark:bg-slate-950">
       {/* Header */}
-      <header className="bg-surface dark:bg-slate-900 border-b border-border dark:border-[#2D4A48]">
+      <header className="bg-[#FFFFFF] dark:bg-slate-900 border-b border-[#D9ECD2] dark:border-slate-800">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
           <div>
-            <h1 className="text-lg font-semibold text-text-primary dark:text-foreground tracking-tight">Cron Job Viewer</h1>
-            <p className="text-xs text-text-muted dark:text-[#A0B0AE] mt-0.5">
+            <h1 className="text-lg font-semibold text-[#204D4C] dark:text-white tracking-tight">Cron Job Viewer</h1>
+            <p className="text-xs text-[#8BAFAD] dark:text-slate-400 mt-0.5">
               View which cron jobs fire within a selected date range
             </p>
           </div>
-          <div className="flex items-center gap-3 text-xs text-text-muted dark:text-[#A0B0AE]">
+          <div className="flex items-center gap-3 text-xs text-[#8BAFAD] dark:text-slate-400">
             <ThemeToggle />
             <span className="flex items-center gap-1.5">
               <span className="w-2 h-2 rounded-full bg-green-500"></span>
@@ -164,9 +168,9 @@ export default function Home() {
 
       <main className="max-w-7xl mx-auto px-6 py-6">
         {/* Filter Panel */}
-        <div className="bg-[#FFFFFF] dark:bg-slate-800/50 rounded-lg border border-border dark:border-[#2D4A48] mb-6">
+        <div className="bg-[#E8F0EA] dark:bg-slate-900 rounded-lg border border-[#D9ECD2] dark:border-slate-700 mb-6">
           {/* Panel header */}
-          <div className="px-4 py-2.5 border-b border-border dark:border-[#2D4A48] flex items-center justify-between">
+          <div className="px-4 py-2.5 border-b border-[#D9ECD2] dark:border-slate-800 flex items-center justify-between">
             <span className="text-[11px] font-semibold text-[#204D4C] dark:text-slate-300 uppercase tracking-wider">
               Date Range
               {selectedServers.length > 0 && (
@@ -177,6 +181,11 @@ export default function Home() {
               {selectedStatuses.length > 0 && (
                 <span className="ml-2 text-[#51A090] dark:text-blue-400">
                   ({selectedStatuses.length} status{selectedStatuses.length > 1 ? "s" : ""})
+                </span>
+              )}
+              {selectedSchedulers.length > 0 && (
+                <span className="ml-2 text-[#51A090] dark:text-blue-400">
+                  ({selectedSchedulers.length} scheduler{selectedSchedulers.length > 1 ? "s" : ""})
                 </span>
               )}
             </span>
@@ -195,10 +204,10 @@ export default function Home() {
                   <button
                     type="button"
                     onClick={() => setSelectedServers([])}
-                    className={`h-7 px-2.5 text-[11px] font-medium rounded-full transition-colors ${
+                    className={`h-6 px-2.5 text-[10px] font-medium rounded-full transition-all border text-slate-700 hover:border-slate-400 hover:bg-slate-50 dark:text-white focus-visible:ring-2 focus-visible:ring-[#51A090] focus-visible:ring-offset-1 focus-visible:outline-none ${
                       selectedServers.length === 0
-                        ? "bg-[#51A090] text-white"
-                        : "bg-[#E4F2E7] dark:bg-slate-800 text-[#204D4C] dark:text-slate-300 hover:bg-[#F0F7F2] dark:hover:bg-slate-700"
+                        ? "bg-[#4A9380] text-white border-[#4A9380] ring-2 ring-[#4A9380] ring-offset-1"
+                        : "bg-white border-slate-300 dark:bg-slate-700 dark:border-slate-600"
                     }`}
                   >
                     All
@@ -214,10 +223,10 @@ export default function Home() {
                             : [...prev, server]
                         );
                       }}
-                      className={`h-7 px-2.5 text-[11px] font-medium rounded-full transition-colors ${
+                      className={`h-6 px-2 text-[10px] font-medium rounded-full transition-all border text-slate-700 hover:border-slate-400 hover:bg-slate-50 dark:text-white focus-visible:ring-2 focus-visible:ring-[#51A090] focus-visible:ring-offset-1 focus-visible:outline-none ${
                         selectedServers.includes(server)
-                          ? "bg-[#51A090] text-white"
-                          : "bg-[#E4F2E7] dark:bg-slate-800 text-[#204D4C] dark:text-slate-300 hover:bg-[#F0F7F2] dark:hover:bg-slate-700"
+                          ? "bg-[#4A9380] text-white border-[#4A9380] ring-2 ring-[#4A9380] ring-offset-1"
+                          : "bg-white border-slate-300 dark:bg-slate-700 dark:border-slate-600"
                       }`}
                     >
                       {server}
@@ -235,32 +244,72 @@ export default function Home() {
                   <button
                     type="button"
                     onClick={() => setSelectedStatuses([])}
-                    className={`h-7 px-2.5 text-[11px] font-medium rounded-full transition-colors ${
+                    className={`h-6 px-2.5 text-[10px] font-medium rounded-full transition-all border text-slate-700 hover:border-slate-400 hover:bg-slate-50 dark:text-white focus-visible:ring-2 focus-visible:ring-[#51A090] focus-visible:ring-offset-1 focus-visible:outline-none ${
                       selectedStatuses.length === 0
-                        ? "bg-[#51A090] text-white"
-                        : "bg-[#E4F2E7] dark:bg-slate-800 text-[#204D4C] dark:text-slate-300 hover:bg-[#F0F7F2] dark:hover:bg-slate-700"
+                        ? "bg-[#4A9380] text-white border-[#4A9380] ring-2 ring-[#4A9380] ring-offset-1"
+                        : "bg-white border-slate-300 dark:bg-slate-700 dark:border-slate-600"
                     }`}
                   >
                     All
                   </button>
-                  {["true", "false"].map((status) => (
+                  {["true", "false"].map((val) => (
                     <button
-                      key={status}
+                      key={val}
                       type="button"
                       onClick={() => {
                         setSelectedStatuses((prev) =>
-                          prev.includes(status)
-                            ? prev.filter((s) => s !== status)
-                            : [...prev, status]
+                          prev.includes(val)
+                            ? prev.filter((s) => s !== val)
+                            : [...prev, val]
                         );
                       }}
-                      className={`h-7 px-2.5 text-[11px] font-medium rounded-full transition-colors ${
-                        selectedStatuses.includes(status)
-                          ? "bg-[#51A090] text-white"
-                          : "bg-[#E4F2E7] dark:bg-slate-800 text-[#204D4C] dark:text-slate-300 hover:bg-[#F0F7F2] dark:hover:bg-slate-700"
+                      className={`h-6 px-2 text-[10px] font-medium rounded-full transition-all border text-slate-700 hover:border-slate-400 hover:bg-slate-50 dark:text-white focus-visible:ring-2 focus-visible:ring-[#51A090] focus-visible:ring-offset-1 focus-visible:outline-none ${
+                        selectedStatuses.includes(val)
+                          ? "bg-[#4A9380] text-white border-[#4A9380] ring-2 ring-[#4A9380] ring-offset-1"
+                          : "bg-white border-slate-300 dark:bg-slate-700 dark:border-slate-600"
                       }`}
                     >
-                      {status === "true" ? "Enabled" : "Disabled"}
+                      {val === "true" ? "Enabled" : "Disabled"}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Scheduler filter */}
+              <div className="flex-1 min-w-0">
+                <label className="block text-[11px] font-semibold text-[#204D4C] dark:text-slate-400 uppercase tracking-wider mb-1">
+                  Scheduler
+                </label>
+                <div className="flex flex-wrap gap-1">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedSchedulers([])}
+                    className={`h-6 px-2.5 text-[10px] font-medium rounded-full transition-all border text-slate-700 hover:border-slate-400 hover:bg-slate-50 dark:text-white focus-visible:ring-2 focus-visible:ring-[#51A090] focus-visible:ring-offset-1 focus-visible:outline-none ${
+                      selectedSchedulers.length === 0
+                        ? "bg-[#4A9380] text-white border-[#4A9380] ring-2 ring-[#4A9380] ring-offset-1"
+                        : "bg-white border-slate-300 dark:bg-slate-700 dark:border-slate-600"
+                    }`}
+                  >
+                    All
+                  </button>
+                  {["true", "false"].map((val) => (
+                    <button
+                      key={val}
+                      type="button"
+                      onClick={() => {
+                        setSelectedSchedulers((prev) =>
+                          prev.includes(val)
+                            ? prev.filter((s) => s !== val)
+                            : [...prev, val]
+                        );
+                      }}
+                      className={`h-6 px-2 text-[10px] font-medium rounded-full transition-all border text-slate-700 hover:border-slate-400 hover:bg-slate-50 dark:text-white focus-visible:ring-2 focus-visible:ring-[#51A090] focus-visible:ring-offset-1 focus-visible:outline-none ${
+                        selectedSchedulers.includes(val)
+                          ? "bg-[#4A9380] text-white border-[#4A9380] ring-2 ring-[#4A9380] ring-offset-1"
+                          : "bg-white border-slate-300 dark:bg-slate-700 dark:border-slate-600"
+                      }`}
+                    >
+                      {val === "true" ? "Active" : "Inactive"}
                     </button>
                   ))}
                 </div>
@@ -276,7 +325,7 @@ export default function Home() {
                   value={searchService}
                   onChange={(e) => setSearchService(e.target.value)}
                   placeholder="Search service..."
-                  className="w-full h-7 px-2.5 text-[11px] border border-border dark:border-[#2D4A48] rounded bg-[#F5FAF7] dark:bg-slate-800 text-text-primary dark:text-foreground placeholder-slate-400 dark:placeholder-slate-500 focus:ring-1 focus:ring-[#51A090] focus:border-[#51A090] outline-none transition-colors"
+                  className="w-full h-7 px-2.5 text-[11px] border border-[#D9ECD2] dark:border-slate-700 rounded bg-[#F5FAF7] dark:bg-slate-800 text-[#204D4C] dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:ring-1 focus:ring-[#51A090] focus:border-[#51A090] outline-none transition-colors"
                 />
               </div>
             </div>
@@ -291,7 +340,7 @@ export default function Home() {
                   type="date"
                   value={fromDate}
                   onChange={(e) => setFromDate(e.target.value)}
-                  className="w-full h-8 px-2.5 text-xs border border-border dark:border-[#2D4A48] rounded bg-[#F5FAF7] dark:bg-slate-800 text-text-primary dark:text-foreground focus:ring-1 focus:ring-[#51A090] focus:border-[#51A090] outline-none transition-colors"
+                  className="w-full h-8 px-2.5 text-xs border border-[#D9ECD2] dark:border-slate-700 rounded bg-[#F5FAF7] dark:bg-slate-800 text-[#204D4C] dark:text-white focus:ring-1 focus:ring-[#51A090] focus:border-[#51A090] outline-none transition-colors"
                 />
               </div>
 
@@ -304,7 +353,7 @@ export default function Home() {
                   type="time"
                   value={fromTime}
                   onChange={(e) => setFromTime(e.target.value)}
-                  className="w-full h-8 px-2.5 text-xs border border-border dark:border-[#2D4A48] rounded bg-[#F5FAF7] dark:bg-slate-800 text-text-primary dark:text-foreground font-mono focus:ring-1 focus:ring-[#51A090] focus:border-[#51A090] outline-none transition-colors"
+                  className="w-full h-8 px-2.5 text-xs border border-[#D9ECD2] dark:border-slate-700 rounded bg-[#F5FAF7] dark:bg-slate-800 text-[#204D4C] dark:text-white font-mono focus:ring-1 focus:ring-[#51A090] focus:border-[#51A090] outline-none transition-colors"
                 />
               </div>
 
@@ -317,7 +366,7 @@ export default function Home() {
                   type="date"
                   value={toDate}
                   onChange={(e) => setToDate(e.target.value)}
-                  className="w-full h-8 px-2.5 text-xs border border-border dark:border-[#2D4A48] rounded bg-[#F5FAF7] dark:bg-slate-800 text-text-primary dark:text-foreground focus:ring-1 focus:ring-[#51A090] focus:border-[#51A090] outline-none transition-colors"
+                  className="w-full h-8 px-2.5 text-xs border border-[#D9ECD2] dark:border-slate-700 rounded bg-[#F5FAF7] dark:bg-slate-800 text-[#204D4C] dark:text-white focus:ring-1 focus:ring-[#51A090] focus:border-[#51A090] outline-none transition-colors"
                 />
               </div>
 
@@ -330,13 +379,14 @@ export default function Home() {
                   type="time"
                   value={toTime}
                   onChange={(e) => setToTime(e.target.value)}
-                  className="w-full h-8 px-2.5 text-xs border border-border dark:border-[#2D4A48] rounded bg-[#F5FAF7] dark:bg-slate-800 text-text-primary dark:text-foreground font-mono focus:ring-1 focus:ring-[#51A090] focus:border-[#51A090] outline-none transition-colors"
+                  className="w-full h-8 px-2.5 text-xs border border-[#D9ECD2] dark:border-slate-700 rounded bg-[#F5FAF7] dark:bg-slate-800 text-[#204D4C] dark:text-white font-mono focus:ring-1 focus:ring-[#51A090] focus:border-[#51A090] outline-none transition-colors"
                 />
               </div>
 
               {/* Apply button */}
               <div className="col-span-1 md:col-span-2">
                 <button
+                  type="button"
                   onClick={() => {
                     const from = buildDateTime(fromDate, fromTime);
                     const to = buildDateTime(toDate, toTime);
@@ -357,14 +407,15 @@ export default function Home() {
           <div className="px-4 pb-3">
             <div
               ref={rulerRef}
-              className="relative h-7 rounded overflow-hidden cursor-default bg-gradient-to-b from-[#F5FAF7] to-[#E4F2E7] dark:from-[#1a2e2c] dark:to-[#0f1f1e]"
+              className="relative h-7 rounded overflow-hidden cursor-default"
+              style={{ background: "var(--ruler-bg)" }}
             >
               {/* Hour labels */}
               {Array.from({ length: 25 }, (_, i) => (
                 <span
                   key={i}
-                  className="absolute text-[9px] font-medium text-[#204D4C] dark:text-white/90 pointer-events-none"
-                  style={{ left: `${(i / 24) * 100}%`, transform: 'translateX(-50%)', top: 2 }}
+                  className="absolute text-[8px] pointer-events-none"
+                  style={{ left: `${(i / 24) * 100}%`, transform: 'translateX(-50%)', top: 2, color: 'var(--ruler-text)' }}
                 >
                   {String(i % 24).padStart(2, "0")}:00
                 </span>
@@ -374,8 +425,8 @@ export default function Home() {
               {Array.from({ length: 25 }, (_, i) => (
                 <div
                   key={i}
-                  className="absolute pointer-events-none h-1.5 bg-slate-600/60"
-                  style={{ left: `${(i / 24) * 100}%`, width: 1, top: 12 }}
+                className="absolute pointer-events-none h-1.5"
+                style={{ left: `${(i / 24) * 100}%`, width: 1, top: 12, backgroundColor: 'var(--ruler-tick)' }}
                 />
               ))}
               
@@ -387,7 +438,7 @@ export default function Home() {
                   width: `${validFromMinutes / 1440 * 100}%`,
                   top: 0,
                   height: '100%',
-                  background: 'rgba(0,0,0,0.4)',
+                  background: 'var(--ruler-dim)',
                 }}
               />
               
@@ -399,7 +450,7 @@ export default function Home() {
                   width: `${(1440 - validToMinutes) / 1440 * 100}%`,
                   top: 0,
                   height: '100%',
-                  background: 'rgba(0,0,0,0.4)',
+                  background: 'var(--ruler-dim)',
                 }}
               />
               
@@ -411,18 +462,8 @@ export default function Home() {
                   width: `${(validToMinutes - validFromMinutes) / 1440 * 100}%`,
                   top: 0,
                   height: '100%',
-                  background: 'rgba(59, 130, 246, 0.15)',
+                  background: 'var(--ruler-selected)',
                 }}
-              />
-              
-              {/* Handle tracks */}
-              <div
-                className="absolute h-4 pointer-events-none"
-                style={{ left: `${validFromMinutes / 1440 * 100}%`, width: 16, top: 10, transform: 'translateX(-50%)' }}
-              />
-              <div
-                className="absolute h-4 pointer-events-none"
-                style={{ left: `${validToMinutes / 1440 * 100}%`, width: 16, top: 10, transform: 'translateX(-50%)' }}
               />
               
               {/* Handles */}
@@ -432,7 +473,7 @@ export default function Home() {
                   left: `${validFromMinutes / 1440 * 100}%`,
                   top: 10,
                   transform: 'translateX(-50%)',
-                  background: 'rgba(59, 130, 246, 0.15)',
+                  background: 'var(--ruler-handle)',
                 }}
                 onMouseDown={(e) => handleRulerMouseDown(e, 'from')}
                 onKeyDown={(e) => {
@@ -460,8 +501,8 @@ export default function Home() {
                 aria-valuenow={validFromMinutes}
               >
                 <div
-                  className="absolute w-1 h-4 bg-blue-400 rounded-full"
-                  style={{ left: '50%', top: 0, transform: 'translateX(-50%)' }}
+                  className="absolute w-1 h-4 rounded-full"
+                  style={{ left: '50%', top: 0, transform: 'translateX(-50%)', backgroundColor: 'var(--ruler-indicator)' }}
                 />
               </div>
               <div
@@ -470,7 +511,7 @@ export default function Home() {
                   left: `${validToMinutes / 1440 * 100}%`,
                   top: 10,
                   transform: 'translateX(-50%)',
-                  background: 'rgba(59, 130, 246, 0.15)',
+                  background: 'var(--ruler-handle)',
                 }}
                 onMouseDown={(e) => handleRulerMouseDown(e, 'to')}
                 onKeyDown={(e) => {
@@ -498,18 +539,18 @@ export default function Home() {
                 aria-valuenow={validToMinutes}
               >
                 <div
-                  className="absolute w-1 h-4 bg-blue-400 rounded-full"
-                  style={{ left: '50%', top: 0, transform: 'translateX(-50%)' }}
+                  className="absolute w-1 h-4 rounded-full"
+                  style={{ left: '50%', top: 0, transform: 'translateX(-50%)', backgroundColor: 'var(--ruler-indicator)' }}
                 />
               </div>
               
               {/* Subtle inner shadow */}
-              <div className="absolute inset-0 pointer-events-none" style={{ boxShadow: "inset 0 1px 2px rgba(0,0,0,0.3)" }} />
+              <div className="absolute inset-0 pointer-events-none" style={{ boxShadow: "var(--ruler-shadow)" }} />
             </div>
           </div>
 
           {/* Quick range buttons */}
-          <div className="px-4 py-2 border-t border-[#D9ECD2] dark:border-[#2D4A48] flex flex-wrap items-center gap-1.5">
+          <div className="px-4 py-2 border-t border-slate-100 dark:border-slate-800 flex flex-wrap items-center gap-1.5">
             <span className="text-[11px] font-medium text-slate-400 dark:text-slate-500 mr-0.5">Quick:</span>
             <div className="flex flex-wrap gap-1">
             {([
@@ -524,6 +565,8 @@ export default function Home() {
               return (
                 <button
                   key={`${days}-${label}`}
+                  type="button"
+                  aria-label={`Set date range to ${label}`}
                   onClick={() => {
                     const pad = (n: number) => String(n).padStart(2, "0");
                     const localDate = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
@@ -533,47 +576,78 @@ export default function Home() {
                     setToTime("23:59");
                     fetchResults(quickFrom, quickTo);
                   }}
-                  className="text-[11px] px-2 py-0.5 rounded-full bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 transition-colors"
+                  className="h-6 px-2 text-[10px] font-medium rounded-full transition-colors bg-slate-100 hover:bg-slate-200 active:bg-slate-300 dark:bg-slate-600 dark:hover:bg-slate-500 dark:active:bg-slate-400 text-slate-700 dark:text-white focus-visible:ring-2 focus-visible:ring-[#51A090] focus-visible:ring-offset-1 focus-visible:outline-none"
                 >
                   {label}
                 </button>
               );
             })}
             {([
-              [0, "Next 5 Min"],
-              [-5, "Past 5 Min"],
-            ] as [number, string][]).map(([offsetMin, label]) => {
-              const now = new Date();
-              const quickFrom = new Date(now);
-              quickFrom.setMinutes(now.getMinutes() + offsetMin);
-              quickFrom.setSeconds(0, 0);
-              const quickTo = new Date(now);
-              quickTo.setMinutes(now.getMinutes() + offsetMin + 5);
-              quickTo.setSeconds(59, 999);
-              return (
-                <button
-                  key={label}
-                  onClick={() => {
-                    const pad = (n: number) => String(n).padStart(2, "0");
-                    const localDate = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-                    setFromDate(localDate(quickFrom));
-                    setToDate(localDate(quickTo));
-                    setFromTime(`${pad(quickFrom.getHours())}:${pad(quickFrom.getMinutes())}`);
-                    setToTime(`${pad(quickTo.getHours())}:${pad(quickTo.getMinutes())}`);
-                    fetchResults(quickFrom, quickTo);
-                  }}
-                  className="text-[11px] px-2 py-0.5 rounded-full bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 transition-colors"
-                >
-                  {label}
-                </button>
-              );
-            })}
+              [0, 5, "Next 5 Min"],
+              [-5, 5, "Past 5 Min"],
+            ] as [number, number, string][]).map(([offsetMin, duration, label]) => (
+              <button
+                key={`${offsetMin}-${label}`}
+                type="button"
+                aria-label={`Set date range to ${label}`}
+                onClick={() => {
+                  const now = new Date();
+                  const quickFrom = new Date(now);
+                  quickFrom.setMinutes(now.getMinutes() + offsetMin);
+                  quickFrom.setSeconds(0, 0);
+                  const quickTo = new Date(now);
+                  quickTo.setMinutes(now.getMinutes() + offsetMin + duration);
+                  quickTo.setSeconds(59, 999);
+                  const pad = (n: number) => String(n).padStart(2, "0");
+                  setFromDate(`${quickFrom.getFullYear()}-${pad(quickFrom.getMonth() + 1)}-${pad(quickFrom.getDate())}`);
+                  setToDate(`${quickTo.getFullYear()}-${pad(quickTo.getMonth() + 1)}-${pad(quickTo.getDate())}`);
+                  setFromTime(`${pad(quickFrom.getHours())}:${pad(quickFrom.getMinutes())}`);
+                  setToTime(`${pad(quickTo.getHours())}:${pad(quickTo.getMinutes())}`);
+                  fetchResults(quickFrom, quickTo);
+                }}
+                className="h-6 px-2 text-[10px] font-medium rounded-full transition-colors bg-slate-100 hover:bg-slate-200 dark:bg-slate-600 dark:hover:bg-slate-500 text-slate-700 dark:text-white focus-visible:ring-2 focus-visible:ring-[#51A090] focus-visible:ring-offset-1 focus-visible:outline-none"
+              >
+                {label}
+              </button>
+            ))}
+            {([
+              [0, 30, "Next 30 Min"],
+              [-30, 30, "Past 30 Min"],
+              [0, 60, "Next 1 Hour"],
+              [-60, 60, "Past 1 Hour"],
+            ] as [number, number, string][]).map(([offsetMin, duration, label]) => (
+              <button
+                key={`${offsetMin}-${label}`}
+                type="button"
+                aria-label={`Set date range to ${label}`}
+                onClick={() => {
+                  const now = new Date();
+                  const quickFrom = new Date(now);
+                  quickFrom.setMinutes(now.getMinutes() + offsetMin);
+                  quickFrom.setSeconds(0, 0);
+                  const quickTo = new Date(now);
+                  quickTo.setMinutes(now.getMinutes() + offsetMin + duration);
+                  quickTo.setSeconds(59, 999);
+                  const pad = (n: number) => String(n).padStart(2, "0");
+                  setFromDate(`${quickFrom.getFullYear()}-${pad(quickFrom.getMonth() + 1)}-${pad(quickFrom.getDate())}`);
+                  setToDate(`${quickTo.getFullYear()}-${pad(quickTo.getMonth() + 1)}-${pad(quickTo.getDate())}`);
+                  setFromTime(`${pad(quickFrom.getHours())}:${pad(quickFrom.getMinutes())}`);
+                  setToTime(`${pad(quickTo.getHours())}:${pad(quickTo.getMinutes())}`);
+                  fetchResults(quickFrom, quickTo);
+                }}
+                className="h-6 px-2 text-[10px] font-medium rounded-full transition-colors bg-slate-100 hover:bg-slate-200 dark:bg-slate-600 dark:hover:bg-slate-500 text-slate-700 dark:text-white focus-visible:ring-2 focus-visible:ring-[#51A090] focus-visible:ring-offset-1 focus-visible:outline-none"
+              >
+                {label}
+              </button>
+            ))}
             </div>
             <button
+              type="button"
+              aria-pressed={showExecutionDates}
               onClick={() => setShowExecutionDates(!showExecutionDates)}
               className={`ml-auto text-[11px] px-3 py-1 rounded-full transition-colors ${
                 showExecutionDates
-                  ? "bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/30 dark:hover:bg-blue-900/40 text-blue-700 dark:text-blue-300"
+                  ? "bg-[#E4F2E7] dark:bg-[#1A3A38] text-[#51A090] dark:text-[#6AD4B8] hover:bg-[#D9ECD2] dark:hover:bg-[#2D4A48]"
                   : "bg-white hover:bg-slate-50 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400"
               }`}
             >
@@ -661,6 +735,15 @@ export default function Home() {
                               {job.server}
                             </span>
                           )}
+                          {job.scheduler !== null && (
+                            <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${
+                              job.scheduler
+                                ? "bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400"
+                                : "bg-slate-100 dark:bg-slate-800 text-slate-400"
+                            }`}>
+                              {job.scheduler ? "Scheduler: Active" : "Scheduler: Inactive"}
+                            </span>
+                          )}
                           <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${
                             totalCount > 0
                               ? "bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-300"
@@ -677,7 +760,7 @@ export default function Home() {
 
                     {/* Matched dates */}
                     {totalCount > 0 && showExecutionDates && (
-                      <div className="mt-2.5 pt-2.5 border-t border-[#D9ECD2] dark:border-[#2D4A48]">
+                      <div className="mt-2.5 pt-2.5 border-t border-slate-100 dark:border-slate-800">
                         <p className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1.5">
                           Execution dates
                         </p>

@@ -5,6 +5,7 @@ export interface CronJob {
   server: string | null;
   compositeServiceName: string | null;
   status: string;
+  scheduler: boolean | null;
 }
 
 export interface MatchedJob {

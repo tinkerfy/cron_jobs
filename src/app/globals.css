@@ -16,6 +16,38 @@
   --surface: #FFFFFF;
   --surface-hover: #F0F7F2;
   --ring: #51A090;
+  --ruler-bg: linear-gradient(to bottom, #F5FAF7, #E4F2E7);
+  --ruler-text: #204D4C;
+  --ruler-tick: rgba(32, 77, 76, 0.2);
+  --ruler-dim: rgba(32, 77, 76, 0.12);
+  --ruler-selected: rgba(81, 160, 144, 0.15);
+  --ruler-handle: rgba(81, 160, 144, 0.15);
+  --ruler-indicator: #51A090;
+  --ruler-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.08);
+}
+
+html.dark {
+  --background: #0a0a0a;
+  --foreground: #ededed;
+  --primary: #51A090;
+  --primary-hover: #5DB8A0;
+  --border: #2D4A48;
+  --selected: #1A3A38;
+  --info: #1A4A50;
+  --text-primary: #EDEDED;
+  --text-secondary: #A0B0AE;
+  --text-muted: #6A8A88;
+  --surface: #1A1A1A;
+  --surface-hover: #252525;
+  --ring: #51A090;
+  --ruler-bg: linear-gradient(to bottom, #1a2e2c, #0f1f1e);
+  --ruler-text: #A0B0AE;
+  --ruler-tick: rgba(160, 176, 174, 0.15);
+  --ruler-dim: rgba(160, 176, 174, 0.08);
+  --ruler-selected: rgba(81, 160, 144, 0.12);
+  --ruler-handle: rgba(81, 160, 144, 0.12);
+  --ruler-indicator: #5DB8A0;
+  --ruler-shadow: rgba(0, 0, 0, 0.3);
 }
 
 @theme inline {
@@ -34,22 +66,6 @@
   --color-text-muted: var(--text-muted);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-}
-
-html.dark {
-  --background: #0a0a0a;
-  --foreground: #ededed;
-  --primary: #51A090;
-  --primary-hover: #5DB8A0;
-  --border: #2D4A48;
-  --selected: #1A3A38;
-  --info: #1A4A50;
-  --text-primary: #EDEDED;
-  --text-secondary: #A0B0AE;
-  --text-muted: #6A8A88;
-  --surface: #1A1A1A;
-  --surface-hover: #252525;
-  --ring: #51A090;
 }
 
 body {

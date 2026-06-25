@@ -11,20 +11,16 @@ interface ThemeContextType {
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
-function getInitialTheme(): Theme {
-  if (typeof window !== "undefined") {
-    const stored = localStorage.getItem("theme");
-    if (stored === "dark" || stored === "light") {
-      return stored;
-    }
-    const systemDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-    return systemDark ? "dark" : "light";
-  }
-  return "light";
-}
-
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [theme, setTheme] = useState<Theme>(getInitialTheme);
+  const [theme, setTheme] = useState<Theme>(() => {
+    if (typeof window !== "undefined") {
+      const stored = localStorage.getItem("theme");
+      if (stored === "dark" || stored === "light") return stored;
+      const systemDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+      return systemDark ? "dark" : "light";
+    }
+    return "light";
+  });
   const mountedRef = useRef(false);
 
   useEffect(() => {
