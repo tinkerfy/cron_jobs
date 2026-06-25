@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { CronJob, formatDate, formatTime, buildDateTime } from "./lib/cron";
 import { MatchedJob } from "./lib/cron";
 import ThemeToggle from "./theme-toggle";
+import GibberishLoading from "./gibberish-loading";
 
 export default function Home() {
   const [jobs, setJobs] = useState<CronJob[]>([]);
@@ -28,6 +29,7 @@ export default function Home() {
   });
   const [toTime, setToTime] = useState("23:59");
   const [showExecutionDates, setShowExecutionDates] = useState(true);
+  const [loading, setLoading] = useState(true);
 
   const fromMinutes = parseInt(fromTime.split(':')[0]) * 60 + parseInt(fromTime.split(':')[1]);
   const toMinutes = parseInt(toTime.split(':')[0]) * 60 + parseInt(toTime.split(':')[1]);
@@ -88,6 +90,7 @@ export default function Home() {
   }, [isDragging, dragHandle]);
 
   useEffect(() => {
+    setLoading(true);
     fetch("/api/cron-jobs")
       .then((res) => {
         if (!res.ok) throw new Error("Failed to load cron jobs");
@@ -102,10 +105,12 @@ export default function Home() {
           setServers(data.servers);
         }
       })
-      .catch((err) => console.error("Failed to load cron jobs:", err));
+      .catch((err) => console.error("Failed to load cron jobs:", err))
+      .finally(() => setLoading(false));
   }, []);
 
   const fetchResults = useCallback((from: Date, to: Date) => {
+    setLoading(true);
     const fmt = (d: Date) =>
       `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}T${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
     const params = new URLSearchParams({
@@ -130,7 +135,8 @@ export default function Home() {
         return res.json();
       })
       .then((data: MatchedJob[]) => setResults(data.map(r => ({ ...r, matchedDates: r.matchedDates.map(d => new Date(d)) }))))
-      .catch((err) => console.error("Failed to fetch filtered jobs:", err));
+      .catch((err) => console.error("Failed to fetch filtered jobs:", err))
+      .finally(() => setLoading(false));
   }, [selectedServers, selectedStatuses, selectedSchedulers, searchService]);
 
   useEffect(() => {
@@ -672,7 +678,9 @@ export default function Home() {
         </div>
 
         {/* Results */}
-        {results === null ? (
+        {loading ? (
+          <GibberishLoading active={loading} />
+        ) : results === null ? (
           <div className="text-center py-16">
             <div className="text-4xl mb-3 opacity-30">⏰</div>
             <h2 className="text-base font-semibold text-slate-500 dark:text-slate-400 mb-1">
