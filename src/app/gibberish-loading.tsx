@@ -49,7 +49,7 @@ export default function GibberishLoading({ active, label = "Loading" }: Gibberis
     } else {
       const timer = setTimeout(() => {
         setVisible(false);
-      }, 1000);
+      }, 3000);
       return () => clearTimeout(timer);
     }
   }, [active]);
@@ -72,7 +72,7 @@ export default function GibberishLoading({ active, label = "Loading" }: Gibberis
     return () => clearTimeout(timer);
   }, [active]);
 
-  if (!active) return <div className="h-5" />;
+  if (!visible) return <div className="h-5" />;
 
   return (
     <div
