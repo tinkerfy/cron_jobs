@@ -6,12 +6,12 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test": "vitest run"
   },
   "dependencies": {
-    "cron-parser": "^5.5.0",
-    "next": "16.2.9",
     "mysql2": "^3.14.3",
+    "next": "16.2.9",
     "react": "19.2.4",
     "react-dom": "19.2.4"
   },
@@ -23,6 +23,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.2.9",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^4.1.9"
   }
 }

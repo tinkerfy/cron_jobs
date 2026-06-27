@@ -1,18 +1,4 @@
-export interface CronJob {
-  name: string;
-  schedule: string;
-  description: string;
-  server: string | null;
-  compositeServiceName: string | null;
-  status: string;
-  scheduler: boolean | null;
-}
-
-export interface MatchedJob {
-  job: CronJob;
-  matchedDates: Date[];
-  totalCount: number;
-}
+export { CronJob, MatchedJob } from "./types";
 
 // Parse a single cron field into a set of valid values
 export function parseField(field: string, min: number, max: number): Set<number> {

@@ -1,20 +1,23 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { CronJob, formatDate, formatTime, buildDateTime } from "./lib/cron";
-import { MatchedJob } from "./lib/cron";
+import { CronJob, MatchedJob, formatDate, formatTime, buildDateTime } from "./lib/cron";
 import ThemeToggle from "./theme-toggle";
 import GibberishLoading from "./gibberish-loading";
 
 export default function Home() {
   const [jobs, setJobs] = useState<CronJob[]>([]);
   const [results, setResults] = useState<MatchedJob[] | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const [servers, setServers] = useState<string[]>([]);
   const [selectedServers, setSelectedServers] = useState<string[]>([]);
   const [selectedStatuses, setSelectedStatuses] = useState<string[]>([]);
   const [selectedSchedulers, setSelectedSchedulers] = useState<string[]>([]);
   const [searchService, setSearchService] = useState("");
   const [debouncedService, setDebouncedService] = useState("");
+  const [sortBy, setSortBy] = useState<"name" | "nextRun" | "count" | "server" | "service">("name");
+  const [showSortMenu, setShowSortMenu] = useState(false);
+  const sortMenuRef = useRef<HTMLDivElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -98,6 +101,16 @@ export default function Home() {
   }, [isDragging, dragHandle]);
 
   useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (sortMenuRef.current && !sortMenuRef.current.contains(e.target as Node)) {
+        setShowSortMenu(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  useEffect(() => {
     setLoading(true);
     fetch("/api/cron-jobs")
       .then((res) => {
@@ -113,14 +126,36 @@ export default function Home() {
           setServers(data.servers);
         }
       })
-      .catch((err) => console.error("Failed to load cron jobs:", err))
+      .catch((err) => setError("Failed to load cron jobs: " + err.message))
       .finally(() => setLoading(false));
   }, []);
 
   const fetchResults = useCallback((from: Date, to: Date, service?: string) => {
     setLoading(true);
-    const fmt = (d: Date) =>
-      `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}T${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+
+    // Validate date range
+    if (from > to) {
+      console.error("Invalid date range: 'from' must be before 'to'");
+      setLoading(false);
+      return;
+    }
+    const maxRangeMs = 365 * 24 * 60 * 60 * 1000; // 365 days
+    if (to.getTime() - from.getTime() > maxRangeMs) {
+      console.error("Date range too large. Maximum is 365 days.");
+      setLoading(false);
+      return;
+    }
+
+    // Format date with timezone offset so server parses it as local time (not UTC)
+    const fmt = (d: Date) => {
+      const base = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}T${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+      const offset = d.getTimezoneOffset(); // minutes west of UTC (negative when ahead)
+      const sign = offset > 0 ? '-' : '+';
+      const abs = Math.abs(offset);
+      const oh = String(Math.floor(abs / 60)).padStart(2, '0');
+      const om = String(abs % 60).padStart(2, '0');
+      return `${base}${sign}${oh}:${om}`;
+    };
     const params = new URLSearchParams({
       from: fmt(from),
       to: fmt(to),
@@ -144,7 +179,7 @@ export default function Home() {
         return res.json();
       })
       .then((data: MatchedJob[]) => setResults(data.map(r => ({ ...r, matchedDates: r.matchedDates.map(d => new Date(d)) }))))
-      .catch((err) => console.error("Failed to fetch filtered jobs:", err))
+      .catch((err) => setError("Failed to fetch filtered jobs: " + err.message))
       .finally(() => setLoading(false));
   }, [selectedServers, selectedStatuses, selectedSchedulers, debouncedService]);
 
@@ -157,11 +192,58 @@ export default function Home() {
   const matchingCount = results?.length ?? 0;
   const totalCount = results?.reduce((sum, r) => sum + r.totalCount, 0) ?? 0;
 
+  const sortedResults = results ? [...results].sort((a, b) => {
+    switch (sortBy) {
+      case "name":
+        return (a.job.compositeServiceName || "").localeCompare(b.job.compositeServiceName || "");
+      case "nextRun":
+        const aNext = a.matchedDates[0]?.getTime() ?? Infinity;
+        const bNext = b.matchedDates[0]?.getTime() ?? Infinity;
+        return aNext - bNext;
+      case "count":
+        return b.totalCount - a.totalCount;
+      case "server":
+        return (a.job.server || "").localeCompare(b.job.server || "");
+      case "service":
+        return (a.job.compositeServiceName || "").localeCompare(b.job.compositeServiceName || "");
+      default:
+        return 0;
+    }
+  }) : null;
+
+  const sortLabels: Record<string, string> = {
+    name: "Name",
+    nextRun: "Next Run",
+    count: "Execution Count",
+    server: "Server",
+    service: "Service",
+  };
+
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
   return (
     <div className="min-h-screen bg-[#F5FAF7] dark:bg-slate-950">
+      {error && (
+        <div className="bg-red-50 dark:bg-red-900/30 border-b border-red-200 dark:border-red-800">
+          <div className="max-w-7xl mx-auto px-6 py-3 flex items-center justify-between">
+            <div className="flex items-center gap-2 text-sm text-red-700 dark:text-red-300">
+              <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span>{error}</span>
+            </div>
+            <button
+              onClick={() => setError(null)}
+              className="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-200 transition-colors"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+        </div>
+      )}
       {/* Header */}
       <header className="bg-[#FFFFFF] dark:bg-slate-900 border-b border-[#D9ECD2] dark:border-slate-800 min-h-[72px]">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
@@ -253,7 +335,7 @@ export default function Home() {
               {/* Status filter */}
               <div className="flex-1 min-w-0">
                 <label className="block text-[11px] font-semibold text-[#204D4C] dark:text-slate-400 uppercase tracking-wider mb-1">
-                  Status
+                  STATUS
                 </label>
                 <div className="flex flex-wrap gap-1">
                   <button
@@ -689,6 +771,45 @@ export default function Home() {
             >
               {showExecutionDates ? "Hide Dates" : "Show Dates"}
             </button>
+            <div className="relative" ref={sortMenuRef}>
+              <button
+                type="button"
+                onClick={() => setShowSortMenu(!showSortMenu)}
+                className={`ml-2 text-[10px] px-2 py-0.5 rounded-full transition-colors flex items-center gap-1 ${
+                  sortBy !== "name"
+                    ? "bg-[#E4F2E7] dark:bg-[#1A3A38] text-[#51A090] dark:text-[#6AD4B8] hover:bg-[#D9ECD2] dark:hover:bg-[#2D4A48]"
+                    : "bg-white hover:bg-slate-50 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400"
+                }`}
+              >
+                Sort
+                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+              {showSortMenu && (
+                <div className="absolute right-0 top-full mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg py-1 z-50 min-w-[180px]">
+                  {Object.entries(sortLabels).map(([key, label]) => (
+                    <button
+                      key={key}
+                      type="button"
+                      onClick={() => { setSortBy(key as typeof sortBy); setShowSortMenu(false); }}
+                      className={`w-full text-left px-3 py-1.5 text-[11px] flex items-center justify-between transition-colors ${
+                        sortBy === key
+                          ? "bg-[#E4F2E7] dark:bg-[#1A3A38] text-[#51A090] dark:text-[#6AD4B8]"
+                          : "text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700"
+                      }`}
+                    >
+                      {label}
+                      {sortBy === key && (
+                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                        </svg>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
@@ -726,11 +847,11 @@ export default function Home() {
 
             {/* Job cards */}
             <div className="space-y-2">
-              {results.map(({ job, matchedDates, totalCount }, idx) => (
+              {sortedResults?.map(({ job, matchedDates, totalCount }, idx) => (
                 <div
-                  key={`${job.name}-${idx}`}
+                  key={`${job.compositeServiceName}-${idx}`}
                   className={`rounded-lg border transition-colors ${
-                    job.status === "false"
+                    job.status === false
                       ? "bg-slate-50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-800 opacity-50"
                       : totalCount > 0
                         ? "bg-white dark:bg-slate-800 border-blue-200 dark:border-blue-800"
@@ -740,11 +861,11 @@ export default function Home() {
                   <div className="px-4 py-3">
                     <div className="flex items-start gap-2.5">
                       <div className={`mt-0.5 w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 ${
-                        job.status === "true"
+                        job.status === true
                           ? "bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400"
                           : "bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400"
                       }`}>
-                        {job.status === "true" ? (
+                        {job.status ? (
                           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
                             <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                           </svg>
@@ -773,11 +894,11 @@ export default function Home() {
                           )}
                           {job.scheduler !== null && (
                             <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${
-                              job.scheduler
+                              job.scheduler === 'true'
                                 ? "bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400"
                                 : "bg-slate-100 dark:bg-slate-800 text-slate-400"
                             }`}>
-                              {job.scheduler ? "Scheduler: Active" : "Scheduler: Inactive"}
+                              {job.scheduler === 'true' ? "Scheduler: Active" : "Scheduler: Inactive"}
                             </span>
                           )}
                           <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${
@@ -804,7 +925,7 @@ export default function Home() {
                           <div className="flex flex-wrap gap-0.5">
                             {matchedDates.map((date, i) => (
                               <span
-                                key={`${job.name}-${i}`}
+                                key={`${job.compositeServiceName}-${i}`}
                                 className="inline-flex items-center text-[10px] px-1 py-0.5 bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 rounded"
                               >
                                 {formatDate(date)} {formatTime(date)}

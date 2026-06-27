@@ -401,9 +401,9 @@ section("matchJobs");
 
 {
   const jobs: CronJob[] = [
-    { name: "backup", schedule: "0 2 * * *", description: "Daily backup", server: null, compositeServiceName: null, status: "true" },
-    { name: "cleanup", schedule: "0 0 1 * *", description: "Monthly cleanup", server: "Prod1", compositeServiceName: "svc-a", status: "true" },
-    { name: "report", schedule: "30 8 * * 1-5", description: "Weekday report", server: "Prod2", compositeServiceName: "svc-b", status: "true" },
+    { schedule: "0 2 * * *", description: "Daily backup", server: null, compositeServiceName: "infra-backups", status: true, scheduler: null },
+    { schedule: "0 0 1 * *", description: "Monthly cleanup", server: "Prod1", compositeServiceName: "svc-a", status: true, scheduler: null },
+    { schedule: "30 8 * * 1-5", description: "Weekday report", server: "Prod2", compositeServiceName: "svc-b", status: true, scheduler: null },
   ];
 
   const from = new Date(2026, 5, 15, 0, 0, 0, 0);
@@ -413,13 +413,13 @@ section("matchJobs");
 
   assert(results.length === 3, "matchJobs returns all jobs");
 
-  const backup = results.find(r => r.job.name === "backup")!;
+  const backup = results.find(r => r.job.compositeServiceName === "infra-backups")!;
   assert(backup.totalCount === 7, "backup: 7 matches in 7-day range");
 
-  const cleanup = results.find(r => r.job.name === "cleanup")!;
+  const cleanup = results.find(r => r.job.compositeServiceName === "svc-a")!;
   assert(cleanup.totalCount === 0, "cleanup: 0 matches (day 1 not in range)");
 
-  const report = results.find(r => r.job.name === "report")!;
+  const report = results.find(r => r.job.compositeServiceName === "svc-b")!;
   // June 15(Mon) to June 21(Sun): weekdays = 15,16,17,18,19 = 5 days
   assert(report.totalCount === 5, "report: 5 weekday matches");
 }

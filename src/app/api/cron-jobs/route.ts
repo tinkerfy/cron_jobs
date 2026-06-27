@@ -1,16 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import pool from "@/app/lib/db";
 import { cronMatches, generateScheduleDescription } from "@/app/lib/cron";
-
-interface CronJob {
-  name: string;
-  schedule: string;
-  description: string;
-  server: string | null;
-  compositeServiceName: string | null;
-  status: string;
-  scheduler: boolean | null;
-}
+import { CronJob, CronJobRow } from "@/app/lib/types";
 
 export async function GET(request: NextRequest) {
   try {
@@ -41,44 +32,43 @@ export async function GET(request: NextRequest) {
       }
     }
     if (status) {
-      const statuses = status.split(",").map(s => s.trim()).filter(Boolean);
-      if (statuses.length === 1) {
+      const statusValues = status.split(",").map(s => s.trim().toLowerCase()).filter(Boolean);
+      if (statusValues.length === 1) {
         whereClauses.push("status = ?");
-        params.push(statuses[0]);
-      } else if (statuses.length > 1) {
-        const placeholders = statuses.map(() => "?").join(", ");
+        params.push(statusValues[0]);
+      } else if (statusValues.length > 1) {
+        const placeholders = statusValues.map(() => "?").join(", ");
         whereClauses.push(`status IN (${placeholders})`);
-        params.push(...statuses);
+        params.push(...statusValues);
       }
     }
     if (scheduler) {
       const schedulers = scheduler.split(",").map(s => s.trim()).filter(Boolean);
       if (schedulers.length === 1) {
         whereClauses.push("scheduler = ?");
-        params.push(schedulers[0] === "true" ? 1 : 0);
+        params.push(schedulers[0]);
       } else if (schedulers.length > 1) {
         const placeholders = schedulers.map(() => "?").join(", ");
         whereClauses.push(`scheduler IN (${placeholders})`);
-        params.push(...schedulers.map(s => s === "true" ? 1 : 0));
+        params.push(...schedulers);
       }
     }
     const whereClause = whereClauses.length > 0 ? `WHERE ${whereClauses.join(" AND ")}` : "";
 
     const [result] = await pool.query(
-      `SELECT name, minutes, hours, days, months, weeks, years, server, compositeservicename, status, scheduler, description
+      `SELECT minutes, hours, days, months, weeks, years, server, compositeservicename, status, scheduler, description
         FROM cron_jobs
         ${whereClause}
-        ORDER BY name`,
+        ORDER BY compositeservicename`,
       params
-    ) as unknown as [{ name: string; minutes: string; hours: string; days: string; months: string; weeks: string; years: string; server: string | null; compositeservicename: string | null; status: string; scheduler: boolean | null; description: string }[]];
+    ) as unknown as [CronJobRow[]];
 
     const jobs: CronJob[] = result.map((row) => ({
-      name: row.name,
       schedule: `${row.minutes} ${row.hours} ${row.days} ${row.months} ${row.weeks} ${row.years || '*'}`,
       description: generateScheduleDescription(`${row.minutes} ${row.hours} ${row.days} ${row.months} ${row.weeks} ${row.years || '*'}`),
       server: row.server,
       compositeServiceName: row.compositeservicename,
-      status: row.status,
+      status: row.status === 'true',
       scheduler: row.scheduler,
     }));
 
