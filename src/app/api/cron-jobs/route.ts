@@ -12,6 +12,45 @@ export async function GET(request: NextRequest) {
     const server = searchParams.get("server");
     const status = searchParams.get("status");
     const scheduler = searchParams.get("scheduler");
+    const showAll = searchParams.get("showAll") === "true";
+
+    // For showAll mode, only apply service name filter
+    if (showAll) {
+      const whereClauses: string[] = [];
+      const params: (string | number)[] = [];
+      
+      if (compositeServiceName) {
+        whereClauses.push("compositeservicename LIKE ?");
+        params.push(`%${compositeServiceName}%`);
+      }
+      
+      const whereClause = whereClauses.length > 0 ? `WHERE ${whereClauses.join(" AND ")}` : "";
+
+      const [result] = await pool.query(
+        `SELECT minutes, hours, days, months, weeks, years, server, compositeservicename, status, scheduler, description
+          FROM cron_jobs
+          ${whereClause}
+          ORDER BY compositeservicename`,
+        params
+      ) as unknown as [CronJobRow[]];
+
+      const jobs: CronJob[] = result.map((row) => ({
+        schedule: `${row.minutes} ${row.hours} ${row.days} ${row.months} ${row.weeks} ${row.years || '*'}`,
+        description: generateScheduleDescription(`${row.minutes} ${row.hours} ${row.days} ${row.months} ${row.weeks} ${row.years || '*'}`),
+        minutes: row.minutes,
+        hours: row.hours,
+        days: row.days,
+        weeks: row.weeks,
+        months: row.months,
+        years: row.years || '*',
+        server: row.server,
+        compositeServiceName: row.compositeservicename,
+        status: row.status === 'true',
+        scheduler: row.scheduler,
+      }));
+
+      return NextResponse.json(jobs);
+    }
 
     const whereClauses: string[] = [];
     const params: (string | number)[] = [];
@@ -66,6 +105,12 @@ export async function GET(request: NextRequest) {
     const jobs: CronJob[] = result.map((row) => ({
       schedule: `${row.minutes} ${row.hours} ${row.days} ${row.months} ${row.weeks} ${row.years || '*'}`,
       description: generateScheduleDescription(`${row.minutes} ${row.hours} ${row.days} ${row.months} ${row.weeks} ${row.years || '*'}`),
+      minutes: row.minutes,
+      hours: row.hours,
+      days: row.days,
+      weeks: row.weeks,
+      months: row.months,
+      years: row.years || '*',
       server: row.server,
       compositeServiceName: row.compositeservicename,
       status: row.status === 'true',
@@ -109,7 +154,9 @@ export async function GET(request: NextRequest) {
       };
     });
 
-    return NextResponse.json(results);
+    // Filter out jobs with no matches in the date range
+    const resultsWithMatches = results.filter(r => r.totalCount > 0);
+    return NextResponse.json(resultsWithMatches);
   } catch (error) {
     console.error("Failed to fetch cron jobs:", error);
     return NextResponse.json(

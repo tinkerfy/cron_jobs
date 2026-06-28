@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { CronJob, MatchedJob, formatDate, formatTime, buildDateTime } from "./lib/cron";
+import { CronJob, MatchedJob, formatDate, formatTime, buildDateTime, expandCron } from "./lib/cron";
 import ThemeToggle from "./theme-toggle";
 import GibberishLoading from "./gibberish-loading";
 
@@ -41,6 +41,8 @@ export default function Home() {
   const [toTime, setToTime] = useState("23:59");
   const [showExecutionDates, setShowExecutionDates] = useState(true);
   const [loading, setLoading] = useState(true);
+  const [exportWarning, setExportWarning] = useState<string | null>(null);
+  const [showAllMode, setShowAllMode] = useState(false);
 
   const fromMinutes = parseInt(fromTime.split(':')[0]) * 60 + parseInt(fromTime.split(':')[1]);
   const toMinutes = parseInt(toTime.split(':')[0]) * 60 + parseInt(toTime.split(':')[1]);
@@ -130,11 +132,51 @@ export default function Home() {
       .finally(() => setLoading(false));
   }, []);
 
-  const fetchResults = useCallback((from: Date, to: Date, service?: string) => {
+  const fetchResults = useCallback((showAll: boolean, from?: Date, to?: Date, service?: string) => {
     setLoading(true);
 
-    // Validate date range
-    if (from > to) {
+    // Handle showAll mode - skip date validation and send different request
+    if (showAll) {
+      const params = new URLSearchParams({ showAll: "true" });
+      if (service !== undefined ? service : debouncedService) {
+        params.set("compositeServiceName", service !== undefined ? service : debouncedService);
+      }
+      
+      fetch(`/api/cron-jobs?${params.toString()}`)
+        .then((res) => {
+          if (!res.ok) throw new Error("Failed to fetch all jobs");
+          return res.json();
+        })
+        .then((data: CronJob[]) => {
+          let mapped: MatchedJob[];
+          if (!showExecutionDates) {
+            mapped = data.map((job) => ({ job, matchedDates: [], totalCount: 0 }));
+          } else {
+            const from = buildDateTime(fromDate, fromTime);
+            const to = buildDateTime(toDate, toTime);
+            const rangeDays = (to.getTime() - from.getTime()) / (1000 * 60 * 60 * 24);
+            if (rangeDays > 30) {
+              mapped = data.map((job) => ({ job, matchedDates: [], totalCount: 0 }));
+            } else {
+              mapped = data.map((job) => {
+                const dates = expandCron(job.schedule, from, to);
+                return {
+                  job,
+                  matchedDates: dates,
+                  totalCount: dates.length,
+                };
+              });
+            }
+          }
+          setResults(mapped);
+        })
+        .catch((err) => setError("Failed to fetch all jobs: " + err.message))
+        .finally(() => setLoading(false));
+      return;
+    }
+
+    // Validate date range for normal mode
+    if (from && to && from > to) {
       console.error("Invalid date range: 'from' must be before 'to'");
       setLoading(false);
       return;
@@ -181,13 +223,18 @@ export default function Home() {
       .then((data: MatchedJob[]) => setResults(data.map(r => ({ ...r, matchedDates: r.matchedDates.map(d => new Date(d)) }))))
       .catch((err) => setError("Failed to fetch filtered jobs: " + err.message))
       .finally(() => setLoading(false));
-  }, [selectedServers, selectedStatuses, selectedSchedulers, debouncedService]);
+  }, [selectedServers, selectedStatuses, selectedSchedulers, debouncedService, showExecutionDates]);
 
   useEffect(() => {
-    const from = buildDateTime(fromDate, fromTime);
-    const to = buildDateTime(toDate, toTime);
-    fetchResults(from, to);
-  }, [fetchResults, fromDate, fromTime, toDate, toTime]);
+    if (showAllMode) {
+      // In showAll mode, just call with true and no dates
+      fetchResults(true);
+    } else {
+      const from = buildDateTime(fromDate, fromTime);
+      const to = buildDateTime(toDate, toTime);
+      fetchResults(false, from, to);
+    }
+  }, [fetchResults, showAllMode, fromDate, fromTime, toDate, toTime]);
 
   const matchingCount = results?.length ?? 0;
   const totalCount = results?.reduce((sum, r) => sum + r.totalCount, 0) ?? 0;
@@ -217,6 +264,59 @@ export default function Home() {
     count: "Execution Count",
     server: "Server",
     service: "Service",
+  };
+
+  // --- CSV Export ---
+  const totalExportDates = results ? results.reduce((sum, r) => sum + r.totalCount, 0) : 0;
+
+  const buildCsvData = (data: MatchedJob[]): string => {
+    const escape = (s: string) => `"${s.replace(/"/g, '""')}"`;
+    const header = [
+      "Job",
+      "Server",
+      "Status",
+      "Scheduler",
+      "Minutes",
+      "Hours",
+      "Days",
+      "Weeks",
+      "Months",
+      "Years",
+    ].join(",");
+    const rows = data.map(({ job }) => [
+      escape(job.compositeServiceName || ""),
+      escape(job.server || ""),
+      job.status ? "true" : "false",
+      escape(job.scheduler ?? ""),
+      escape(job.minutes),
+      escape(job.hours),
+      escape(job.days),
+      escape(job.weeks),
+      escape(job.months),
+      escape(job.years),
+    ].join(","));
+    return header + "\n" + rows.join("\n");
+  };
+
+  const handleExportCsv = () => {
+    if (!results || results.length === 0) return;
+    if (totalExportDates > 100000) {
+      setExportWarning(`Exporting ${totalExportDates.toLocaleString()} dates. This may cause browser slowdown. Continue?`);
+      return;
+    }
+    const csv = buildCsvData(results);
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    const now = new Date();
+    const pad = (n: number) => String(n).padStart(2, "0");
+    a.href = url;
+    a.download = `cron-jobs-${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    setExportWarning(null);
   };
 
   const today = new Date();
@@ -293,15 +393,18 @@ export default function Home() {
           <div className="px-4 py-3 border-t border-[#D9ECD2] dark:border-slate-800">
             <div className="flex items-start gap-4 mb-2">
               {/* Server filter */}
-              <div className="flex-1 min-w-0">
+              <div className={`flex-1 min-w-0 ${showAllMode ? 'opacity-50 pointer-events-none' : ''}`}>
                 <label className="block text-[11px] font-semibold text-[#204D4C] dark:text-slate-400 uppercase tracking-wider mb-1">
                   Server
                 </label>
                 <div className="flex flex-wrap gap-1">
                   <button
                     type="button"
+                    disabled={showAllMode}
                     onClick={() => setSelectedServers([])}
                     className={`h-6 px-2.5 text-[10px] font-medium rounded-full transition-all border text-slate-700 hover:border-slate-400 hover:bg-slate-50 dark:text-white focus-visible:ring-2 focus-visible:ring-[#51A090] focus-visible:ring-offset-1 focus-visible:outline-none ${
+                      showAllMode ? 'cursor-not-allowed' : ''
+                    } ${
                       selectedServers.length === 0
                         ? "bg-[#4A9380] text-white border-[#4A9380] ring-2 ring-[#4A9380] ring-offset-1"
                         : "bg-white border-slate-300 dark:bg-slate-700 dark:border-slate-600"
@@ -313,6 +416,7 @@ export default function Home() {
                     <button
                       key={server}
                       type="button"
+                      disabled={showAllMode}
                       onClick={() => {
                         setSelectedServers((prev) =>
                           prev.includes(server)
@@ -321,6 +425,8 @@ export default function Home() {
                         );
                       }}
                       className={`h-6 px-2 text-[10px] font-medium rounded-full transition-all border text-slate-700 hover:border-slate-400 hover:bg-slate-50 dark:text-white focus-visible:ring-2 focus-visible:ring-[#51A090] focus-visible:ring-offset-1 focus-visible:outline-none ${
+                        showAllMode ? 'cursor-not-allowed' : ''
+                      } ${
                         selectedServers.includes(server)
                           ? "bg-[#4A9380] text-white border-[#4A9380] ring-2 ring-[#4A9380] ring-offset-1"
                           : "bg-white border-slate-300 dark:bg-slate-700 dark:border-slate-600"
@@ -333,15 +439,18 @@ export default function Home() {
               </div>
 
               {/* Status filter */}
-              <div className="flex-1 min-w-0">
+              <div className={`flex-1 min-w-0 ${showAllMode ? 'opacity-50 pointer-events-none' : ''}`}>
                 <label className="block text-[11px] font-semibold text-[#204D4C] dark:text-slate-400 uppercase tracking-wider mb-1">
                   STATUS
                 </label>
                 <div className="flex flex-wrap gap-1">
                   <button
                     type="button"
+                    disabled={showAllMode}
                     onClick={() => setSelectedStatuses([])}
                     className={`h-6 px-2.5 text-[10px] font-medium rounded-full transition-all border text-slate-700 hover:border-slate-400 hover:bg-slate-50 dark:text-white focus-visible:ring-2 focus-visible:ring-[#51A090] focus-visible:ring-offset-1 focus-visible:outline-none ${
+                      showAllMode ? 'cursor-not-allowed' : ''
+                    } ${
                       selectedStatuses.length === 0
                         ? "bg-[#4A9380] text-white border-[#4A9380] ring-2 ring-[#4A9380] ring-offset-1"
                         : "bg-white border-slate-300 dark:bg-slate-700 dark:border-slate-600"
@@ -353,6 +462,7 @@ export default function Home() {
                     <button
                       key={val}
                       type="button"
+                      disabled={showAllMode}
                       onClick={() => {
                         setSelectedStatuses((prev) =>
                           prev.includes(val)
@@ -361,6 +471,8 @@ export default function Home() {
                         );
                       }}
                       className={`h-6 px-2 text-[10px] font-medium rounded-full transition-all border text-slate-700 hover:border-slate-400 hover:bg-slate-50 dark:text-white focus-visible:ring-2 focus-visible:ring-[#51A090] focus-visible:ring-offset-1 focus-visible:outline-none ${
+                        showAllMode ? 'cursor-not-allowed' : ''
+                      } ${
                         selectedStatuses.includes(val)
                           ? "bg-[#4A9380] text-white border-[#4A9380] ring-2 ring-[#4A9380] ring-offset-1"
                           : "bg-white border-slate-300 dark:bg-slate-700 dark:border-slate-600"
@@ -373,15 +485,18 @@ export default function Home() {
               </div>
 
               {/* Scheduler filter */}
-              <div className="flex-1 min-w-0">
+              <div className={`flex-1 min-w-0 ${showAllMode ? 'opacity-50 pointer-events-none' : ''}`}>
                 <label className="block text-[11px] font-semibold text-[#204D4C] dark:text-slate-400 uppercase tracking-wider mb-1">
                   Scheduler
                 </label>
                 <div className="flex flex-wrap gap-1">
                   <button
                     type="button"
+                    disabled={showAllMode}
                     onClick={() => setSelectedSchedulers([])}
                     className={`h-6 px-2.5 text-[10px] font-medium rounded-full transition-all border text-slate-700 hover:border-slate-400 hover:bg-slate-50 dark:text-white focus-visible:ring-2 focus-visible:ring-[#51A090] focus-visible:ring-offset-1 focus-visible:outline-none ${
+                      showAllMode ? 'cursor-not-allowed' : ''
+                    } ${
                       selectedSchedulers.length === 0
                         ? "bg-[#4A9380] text-white border-[#4A9380] ring-2 ring-[#4A9380] ring-offset-1"
                         : "bg-white border-slate-300 dark:bg-slate-700 dark:border-slate-600"
@@ -393,6 +508,7 @@ export default function Home() {
                     <button
                       key={val}
                       type="button"
+                      disabled={showAllMode}
                       onClick={() => {
                         setSelectedSchedulers((prev) =>
                           prev.includes(val)
@@ -401,6 +517,8 @@ export default function Home() {
                         );
                       }}
                       className={`h-6 px-2 text-[10px] font-medium rounded-full transition-all border text-slate-700 hover:border-slate-400 hover:bg-slate-50 dark:text-white focus-visible:ring-2 focus-visible:ring-[#51A090] focus-visible:ring-offset-1 focus-visible:outline-none ${
+                        showAllMode ? 'cursor-not-allowed' : ''
+                      } ${
                         selectedSchedulers.includes(val)
                           ? "bg-[#4A9380] text-white border-[#4A9380] ring-2 ring-[#4A9380] ring-offset-1"
                           : "bg-white border-slate-300 dark:bg-slate-700 dark:border-slate-600"
@@ -412,7 +530,7 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* Service search */}
+              {/* Service search - ALWAYS ENABLED */}
               <div className="flex-1 min-w-0">
                 <label className="block text-[11px] font-semibold text-[#204D4C] dark:text-slate-400 uppercase tracking-wider mb-1">
                   Service
@@ -438,7 +556,8 @@ export default function Home() {
               <div className="h-px bg-gradient-to-r from-transparent via-[#A3C4A0] to-transparent dark:via-slate-700" />
             </div>
 
-            <div className="grid grid-cols-2 md:grid-cols-12 gap-x-3 gap-y-2 items-end">
+            {/* Date/time inputs - disabled in showAll mode */}
+            <div className={`grid grid-cols-2 md:grid-cols-12 gap-x-3 gap-y-2 items-end ${showAllMode ? 'opacity-50 pointer-events-none' : ''}`}>
               {/* From date */}
               <div className="col-span-1 md:col-span-3">
                 <label className="block text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">
@@ -511,8 +630,8 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Time Range Ruler */}
-          <div className="px-4 pb-3">
+          {/* Time Range Ruler - disabled in showAll mode */}
+          <div className={`px-4 pb-3 ${showAllMode ? 'opacity-50 pointer-events-none' : ''}`}>
             <div
               ref={rulerRef}
               className="relative h-7 rounded overflow-hidden cursor-default"
@@ -684,6 +803,7 @@ export default function Home() {
                 <button
                   key={`${days}-${label}`}
                   type="button"
+                  disabled={showAllMode}
                   aria-label={`Set date range to ${label}`}
                   onClick={() => {
                     const pad = (n: number) => String(n).padStart(2, "0");
@@ -707,6 +827,7 @@ export default function Home() {
               <button
                 key={`${offsetMin}-${label}`}
                 type="button"
+                disabled={showAllMode}
                 aria-label={`Set date range to ${label}`}
                 onClick={() => {
                   const now = new Date();
@@ -737,6 +858,7 @@ export default function Home() {
               <button
                 key={`${offsetMin}-${label}`}
                 type="button"
+                disabled={showAllMode}
                 aria-label={`Set date range to ${label}`}
                 onClick={() => {
                   const now = new Date();
@@ -810,6 +932,60 @@ export default function Home() {
                 </div>
               )}
             </div>
+            {/* Show All toggle button */}
+            <button
+              type="button"
+              onClick={() => {
+                setShowAllMode(!showAllMode);
+                if (!showAllMode) {
+                  // Clear other filters when entering showAll mode
+                  setSelectedServers([]);
+                  setSelectedStatuses([]);
+                  setSelectedSchedulers([]);
+                } else {
+                  // Reset date/time when exiting showAll mode
+                  const pad = (n: number) => String(n).padStart(2, "0");
+                  const todayStr = `${today.getFullYear()}-${pad(today.getMonth() + 1)}-${pad(today.getDate())}`;
+                  setFromDate(todayStr);
+                  setToDate(todayStr);
+                  setFromTime("00:00");
+                  setToTime("23:59");
+                }
+              }}
+              className={`ml-2 text-[10px] px-2 py-0.5 rounded-full transition-colors flex items-center gap-1 ${
+                showAllMode
+                  ? "bg-[#4A9380] dark:bg-[#3D8070] text-white hover:bg-[#3D8070] dark:hover:bg-[#2D6E5E]"
+                  : "bg-white hover:bg-slate-50 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400"
+              }`}
+              title={showAllMode ? "Show only matched jobs in date range" : "Show all jobs regardless of date range"}
+            >
+              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                {showAllMode ? (
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z M2.458 12C3.732 7.943 7.528 5 12 5s8.268 2.943 9.542 7c-1.274 4.057-5.07 7-9.542 7S2.458 16.057 1.184 12zM12 1v2m0 16v2M4.22 4.22l1.42 1.42m10.14 10.14l1.42-1.42M4.22 19.78l1.42-1.42M18.36 5.64l1.42 1.42" />
+                ) : (
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.238 1.706c1.724 0 3.35 0 3.35 0M17.97 9.07a2.75 2.75 0 01-4.7 0 2.75 2.75 0 01-4.7 0m.86-6.83c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.238-1.706c-1.724 0-3.35 0-3.35 0M6.03 9.07a2.75 2.75 0 014.7 0 2.75 2.75 0 014.7 0m-.86 6.83c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.238 1.706c1.724 0 3.35 0 3.35 0" />
+                )}
+              </svg>
+              {showAllMode ? "Hide All" : "Show All"}
+            </button>
+            
+            {/* Export CSV button */}
+            <button
+              type="button"
+              onClick={handleExportCsv}
+              disabled={!results || results.length === 0}
+              className={`ml-2 text-[10px] px-2 py-0.5 rounded-full transition-colors flex items-center gap-1 ${
+                results && results.length > 0
+                  ? "bg-[#E4F2E7] dark:bg-[#1A3A38] text-[#51A090] dark:text-[#6AD4B8] hover:bg-[#D9ECD2] dark:hover:bg-[#2D4A48] cursor-pointer"
+                  : "bg-white dark:bg-slate-800 text-slate-300 dark:text-slate-600 cursor-not-allowed"
+              }`}
+              title={results && results.length > 0 ? "Export matched jobs to CSV" : "No results to export"}
+            >
+              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              Export CSV
+            </button>
           </div>
         </div>
 
@@ -831,18 +1007,21 @@ export default function Home() {
               <p className="text-xs text-slate-500 dark:text-slate-400">
                 {matchingCount > 0 ? (
                   <>
-                    <span className="font-semibold text-slate-700 dark:text-slate-200">{matchingCount}</span> of{" "}
-                    <span className="font-semibold text-slate-700 dark:text-slate-200">{jobs.length}</span> jobs matched
-                    {matchingCount > 0 && (
-                      <span className="ml-1.5">
-                        · <span className="font-semibold text-slate-700 dark:text-slate-200">{totalCount}</span> executions
-                      </span>
-                    )}
+                    <span className="font-semibold text-slate-700 dark:text-slate-200">{matchingCount}</span> jobs in range
+                    · <span className="font-semibold text-slate-700 dark:text-slate-200">{totalCount}</span> executions
                   </>
                 ) : (
                   "No jobs matched the selected date range"
                 )}
               </p>
+              {exportWarning && (
+                <p className="text-xs text-amber-600 dark:text-amber-400 flex items-center gap-1.5">
+                  <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  {exportWarning}
+                </p>
+              )}
             </div>
 
             {/* Job cards */}
@@ -853,9 +1032,7 @@ export default function Home() {
                   className={`rounded-lg border transition-colors ${
                     job.status === false
                       ? "bg-slate-50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-800 opacity-50"
-                      : totalCount > 0
-                        ? "bg-white dark:bg-slate-800 border-blue-200 dark:border-blue-800"
-                        : "bg-slate-50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-800 opacity-60"
+                      : "bg-white dark:bg-slate-800 border-blue-200 dark:border-blue-800"
                   }`}
                 >
                   <div className="px-4 py-3">

@@ -1,6 +1,12 @@
 export interface CronJob {
   schedule: string;
   description: string;
+  minutes: string;
+  hours: string;
+  days: string;
+  weeks: string;
+  months: string;
+  years: string;
   server: string | null;
   compositeServiceName: string | null;
   status: boolean;

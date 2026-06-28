@@ -137,6 +137,40 @@
 
 ---
 
+## Phase 6: Export & Timezone
+
+### 6A — Export to CSV ✅
+**Why:** Users need to save and share matched job results for reporting and audit purposes.
+
+| Task | Details | Files | Status |
+|---|---|---|---|
+| Add `buildCsvData()` function | CSV string builder from `MatchedJob[]` — columns: Job, Server, Status, Schedule, Description, Execution Count, Execution Dates | `page.tsx` | ✅ Done |
+| Add `handleExportCsv()` handler | Blob + `<a download>` pattern, filename `cron-jobs-YYYYMMDD.csv` | `page.tsx` | ✅ Done |
+| Add Export CSV button | Next to sort menu, disabled when no results, consistent styling | `page.tsx` | ✅ Done |
+| Add size warning | Warn at >100k dates (browser slowdown risk) | `page.tsx` | ✅ Done |
+
+**Complexity:** Low — one file, no new dependencies, no test changes.
+
+### 6B — Timezone Support ⬜
+**Why:** Users across countries need to view cron schedules in their local timezone, not just the browser default.
+
+| Task | Details | Files | Status |
+|---|---|---|---|
+| Add timezone selector dropdown | Major IANA timezones (UTC, ET, PT, CT, GMT, CET, JST, etc.) | `page.tsx` | ⬜ |
+| Default to browser's `Intl.DateTimeFormat().resolvedOptions().timeZone` | | `page.tsx` | ⬜ |
+| Add `timezone` query param to API | Thread `?timezone=` through `fetchResults` | `page.tsx`, `route.ts` | ⬜ |
+| Modify `cronMatches()` for timezone | Optional `targetTimezone` param, use `Intl.DateTimeFormat` to extract hour/day/month in target TZ | `lib/cron.ts` | ⬜ |
+| Thread timezone through `expandCron()` / `matchJobs()` | | `lib/cron.ts` | ⬜ |
+| Update `formatDate()` / `formatTime()` | Accept optional `timeZone` param, use `Intl.DateTimeFormat` with `timeZone` | `lib/cron.ts` | ⬜ |
+| Update UI to pass timezone to formatters | All date rendering in job cards | `page.tsx` | ⬜ |
+| Update relative dates ("in 3h", "tomorrow") | Compute "now" in target timezone | `lib/cron.ts` | ⬜ |
+| Add timezone-aware tests | DST transitions, cross-timezone scenarios | `cron.test.ts` | ⬜ |
+| Run 108 cron tests | Confirm no regressions | `cron.test.ts` | ⬜ |
+
+**Complexity:** Medium — core logic changes, test suite updates, DST edge cases.
+
+---
+
 ## Summary Table
 
 | Phase | Title | Tasks | Effort |
@@ -147,7 +181,8 @@
 | **3** | UX Enhancements | Error banner ✅, Sort ✅ | 1–2 hrs done |
 | **4** | Intelligence | (removed 4A, 4B, 4C) | — |
 | **5** | Cleanup | Dead code removal, env vars, test runner | ✅ Done |
-| | | | **~16–26 hrs total** |
+| **6** | Export & Timezone | CSV export ✅, Timezone ⬜ | 1–2 hrs (CSV) + 4–6 hrs (TZ) |
+| | | | **~20–32 hrs total** |
 
 ---
 
