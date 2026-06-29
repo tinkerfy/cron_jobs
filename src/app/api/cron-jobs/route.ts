@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import pool from "@/app/lib/db";
-import { cronMatches, generateScheduleDescription } from "@/app/lib/cron";
+import { compileCron } from "@/app/lib/cron";
 import { CronJob, CronJobRow } from "@/app/lib/types";
+
+// Ensure all date operations use Asia/Singapore time
+process.env.TZ = "Asia/Singapore";
 
 export async function GET(request: NextRequest) {
   try {
@@ -27,7 +30,7 @@ export async function GET(request: NextRequest) {
       const whereClause = whereClauses.length > 0 ? `WHERE ${whereClauses.join(" AND ")}` : "";
 
       const [result] = await pool.query(
-        `SELECT minutes, hours, days, months, weeks, years, server, compositeservicename, status, scheduler, description
+        `SELECT minutes, hours, days, months, weeks, years, server, compositeservicename, status, scheduler
           FROM cron_jobs
           ${whereClause}
           ORDER BY compositeservicename`,
@@ -36,7 +39,6 @@ export async function GET(request: NextRequest) {
 
       const jobs: CronJob[] = result.map((row) => ({
         schedule: `${row.minutes} ${row.hours} ${row.days} ${row.months} ${row.weeks} ${row.years || '*'}`,
-        description: generateScheduleDescription(`${row.minutes} ${row.hours} ${row.days} ${row.months} ${row.weeks} ${row.years || '*'}`),
         minutes: row.minutes,
         hours: row.hours,
         days: row.days,
@@ -95,7 +97,7 @@ export async function GET(request: NextRequest) {
     const whereClause = whereClauses.length > 0 ? `WHERE ${whereClauses.join(" AND ")}` : "";
 
     const [result] = await pool.query(
-      `SELECT minutes, hours, days, months, weeks, years, server, compositeservicename, status, scheduler, description
+      `SELECT minutes, hours, days, months, weeks, years, server, compositeservicename, status, scheduler
         FROM cron_jobs
         ${whereClause}
         ORDER BY compositeservicename`,
@@ -104,7 +106,6 @@ export async function GET(request: NextRequest) {
 
     const jobs: CronJob[] = result.map((row) => ({
       schedule: `${row.minutes} ${row.hours} ${row.days} ${row.months} ${row.weeks} ${row.years || '*'}`,
-      description: generateScheduleDescription(`${row.minutes} ${row.hours} ${row.days} ${row.months} ${row.weeks} ${row.years || '*'}`),
       minutes: row.minutes,
       hours: row.hours,
       days: row.days,
@@ -131,20 +132,50 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Invalid date format" }, { status: 400 });
     }
 
-    // Server-side cron matching within the date range
+    // Server-side cron matching within the date range (uses compiled cron for O(1) lookups)
     const results = jobs.map((job) => {
+      const compiled = compileCron(job.schedule);
       const matchedDates: Date[] = [];
-      const current = new Date(from);
-      current.setSeconds(0, 0);
-
       const toClamped = new Date(to);
       toClamped.setSeconds(59, 999);
 
-      while (current <= toClamped) {
-        if (cronMatches(current, job.schedule)) {
-          matchedDates.push(new Date(current));
+      // Iterate day by day (not minute by minute)
+      const day = new Date(from);
+      day.setHours(0, 0, 0, 0);
+
+      while (day <= toClamped) {
+        const dateMonth = day.getMonth() + 1;
+        const dateDayOfMonth = day.getDate();
+        const dateDayOfWeek = day.getDay();
+
+        if (compiled.months[dateMonth - 1]) {
+          const dayMatch = compiled.constrained.dayOfMonth && compiled.constrained.dayOfWeek
+            ? !!(compiled.daysOfMonth[dateDayOfMonth - 1] || compiled.daysOfWeek[dateDayOfWeek])
+            : !!(compiled.daysOfMonth[dateDayOfMonth - 1] && compiled.daysOfWeek[dateDayOfWeek]);
+
+          if (dayMatch) {
+            // Find matching minutes within this day
+            let minute = 0;
+            while (minute < 60) {
+              if (compiled.minutes[minute]) {
+                const candidate = new Date(day);
+                candidate.setHours(0, minute, 0, 0);
+                if (candidate > toClamped) break;
+                if (compiled.hours[candidate.getHours()]) {
+                  matchedDates.push(candidate);
+                }
+              }
+              if (compiled.minuteStep && compiled.minuteStep > 0) {
+                minute += compiled.minuteStep;
+              } else {
+                minute++;
+              }
+            }
+          }
         }
-        current.setMinutes(current.getMinutes() + 1);
+
+        day.setDate(day.getDate() + 1);
+        if (day > toClamped) break;
       }
 
       return {

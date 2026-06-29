@@ -49,7 +49,7 @@ export default function GibberishLoading({ active, label = "Loading" }: Gibberis
     } else {
       const timer = setTimeout(() => {
         setVisible(false);
-      }, 3000);
+      }, 300);
       return () => clearTimeout(timer);
     }
   }, [active]);

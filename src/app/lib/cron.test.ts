@@ -1,4 +1,4 @@
-import { cronMatches, parseField, generateScheduleDescription, expandCron, matchJobs, CronJob } from "./cron";
+import { cronMatches, parseField, expandCron, matchJobs, CronJob } from "./cron";
 
 let passed = 0;
 let failed = 0;
@@ -236,109 +236,6 @@ section("cronMatches — edge cases");
   assert(cronMatches(new Date(2026, 5, 15, 10, 30), "30 10 * 1 *") === false, "complex: 10:30 on june 15 does not match month 1");
 }
 
-// ─── generateScheduleDescription tests ──────────────────────────────
-section("generateScheduleDescription");
-
-{
-  // Simple patterns
-  assert(
-    generateScheduleDescription("0 10 * * *") === "Daily at 10:00 AM",
-    "single hour daily"
-  );
-  assert(
-    generateScheduleDescription("0 0 * * *") === "Daily at 12:00 AM",
-    "midnight daily"
-  );
-
-  // Every N minutes
-  assert(
-    generateScheduleDescription("*/15 * * * *").includes("Every 15 min"),
-    "every 15 minutes"
-  );
-  assert(
-    generateScheduleDescription("*/5 * * * *").includes("Every 5 min"),
-    "every 5 minutes"
-  );
-
-  // Weekdays
-  assert(
-    generateScheduleDescription("0 9 * * 1-5").includes("Weekdays") && generateScheduleDescription("0 9 * * 1-5").includes("9:00 AM"),
-    "weekdays at 10am"
-  );
-
-  // Multiple hours
-  assert(
-    generateScheduleDescription("0 9,12,15 * * *").includes("9:00 AM") && generateScheduleDescription("0 9,12,15 * * *").includes("12:00 PM") && generateScheduleDescription("0 9,12,15 * * *").includes("3:00 PM"),
-    "multiple hours"
-  );
-
-  // Day of month
-  assert(
-    generateScheduleDescription("0 10 1 * *").includes("Monthly") && generateScheduleDescription("0 10 1 * *").includes("day 1"),
-    "monthly on day 1"
-  );
-
-  // Month constraint
-  assert(
-    generateScheduleDescription("0 10 1 1 *").includes("Yearly") && generateScheduleDescription("0 10 1 1 *").includes("Jan"),
-    "yearly in january"
-  );
-
-  // Hour range
-  assert(
-    generateScheduleDescription("0 9-17 * * *").includes("9:00 AM") && generateScheduleDescription("0 9-17 * * *").includes("5:00 PM"),
-    "hour range 9-17"
-  );
-
-  // Weekend
-  assert(
-    generateScheduleDescription("0 10 * * 0,6").includes("Weekends"),
-    "weekends (0,6)"
-  );
-
-  // Specific days
-  assert(
-    generateScheduleDescription("0 10 * * 1,3,5").includes("Mon") && generateScheduleDescription("0 10 * * 1,3,5").includes("Wed") && generateScheduleDescription("0 10 * * 1,3,5").includes("Fri"),
-    "specific days mon,wed,fri"
-  );
-
-  // Every minute (NOTE: code returns "Every hour" due to Case 10 catching hour=* first)
-  assert(
-    generateScheduleDescription("* * * * *") === "Every hour",
-    "every minute (code returns 'Every hour' due to case ordering)"
-  );
-
-  // Every hour at specific minutes
-  assert(
-    generateScheduleDescription("0,30 * * * *").includes("At"),
-    "at specific minutes every hour"
-  );
-
-  // Minute range
-  assert(
-    generateScheduleDescription("10-20 * * * *").includes("Mins 10–20"),
-    "minute range"
-  );
-
-  // Fallback for invalid
-  assert(
-    generateScheduleDescription("invalid") === "invalid",
-    "invalid expression returns original"
-  );
-
-  // Step with hour constraint
-  let desc = generateScheduleDescription("*/10 */2 * * *");
-  assert(desc.includes("Every 10 min"), "step with every-2-hours: includes 'Every 10 min'");
-
-  // Step with weekday constraint
-  desc = generateScheduleDescription("*/30 * * * 1-5");
-  assert(desc.includes("Every 30 min") && desc.includes("weekdays"), "step with weekdays");
-
-  // Month range
-  desc = generateScheduleDescription("0 10 1 3-6 *");
-  assert(desc.includes("Yearly") && desc.includes("Mar"), "month range yearly");
-}
-
 // ─── expandCron tests ───────────────────────────────────────────────
 section("expandCron");
 
@@ -401,9 +298,9 @@ section("matchJobs");
 
 {
   const jobs: CronJob[] = [
-    { schedule: "0 2 * * *", description: "Daily backup", server: null, compositeServiceName: "infra-backups", status: true, scheduler: null },
-    { schedule: "0 0 1 * *", description: "Monthly cleanup", server: "Prod1", compositeServiceName: "svc-a", status: true, scheduler: null },
-    { schedule: "30 8 * * 1-5", description: "Weekday report", server: "Prod2", compositeServiceName: "svc-b", status: true, scheduler: null },
+    { schedule: "0 2 * * *", minutes: "0", hours: "2", days: "*", weeks: "*", months: "*", years: "*", server: null, compositeServiceName: "infra-backups", status: true, scheduler: null },
+    { schedule: "0 0 1 * *", minutes: "0", hours: "0", days: "1", weeks: "*", months: "*", years: "*", server: "Prod1", compositeServiceName: "svc-a", status: true, scheduler: null },
+    { schedule: "30 8 * * 1-5", minutes: "30", hours: "8", days: "*", weeks: "1-5", months: "*", years: "*", server: "Prod2", compositeServiceName: "svc-b", status: true, scheduler: null },
   ];
 
   const from = new Date(2026, 5, 15, 0, 0, 0, 0);

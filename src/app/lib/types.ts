@@ -1,6 +1,5 @@
 export interface CronJob {
   schedule: string;
-  description: string;
   minutes: string;
   hours: string;
   days: string;
@@ -30,5 +29,4 @@ export interface CronJobRow {
   compositeservicename: string | null;
   status: string;
   scheduler: string | null;
-  description: string;
 }
